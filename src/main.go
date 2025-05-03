@@ -5,12 +5,12 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/twigman/fshare/config"
-	"github.com/twigman/fshare/httpapi"
+	"github.com/twigman/fshare/src/config"
+	"github.com/twigman/fshare/src/httpapi"
 )
 
 func main() {
-	cfg, err := config.LoadConfig("./data/config.json")
+	cfg, err := config.LoadConfig("../data/config.json")
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}

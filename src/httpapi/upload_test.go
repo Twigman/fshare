@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/twigman/fshare/config"
+	"github.com/twigman/fshare/src/config"
 )
 
 func TestUploadHandler_Success(t *testing.T) {

@@ -1,5 +1,6 @@
 {
     "port": 8080,
-    "upload_path": "./data/uploads",
-    "max_file_size_in_mb": 10
+    "upload_path": "../data/uploads",
+    "max_file_size_in_mb": 10,
+    "file_register_path": "../data/register.json"
 }
