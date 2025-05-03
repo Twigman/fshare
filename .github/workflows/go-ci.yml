@@ -7,6 +7,9 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+env:
+  PROJECT: ${{ github.event.repository.name }}
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -42,9 +45,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Set project name variable
-      run: echo "PROJECT=${{ github.event.repository.name }}" >> $GITHUB_ENV
-
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
@@ -54,7 +54,7 @@ jobs:
     - name: Build binaries
       run: |
         mkdir -p dist
-        output_name=$PROJECT-${{ matrix.goos }}-${{ matrix.goarch }}
+        output_name=${PROJECT}-${{ matrix.goos }}-${{ matrix.goarch }}
         if [ "${{ matrix.goos }}" == "windows" ]; then
           output_name="${output_name}.exe"
         fi
@@ -67,5 +67,5 @@ jobs:
     #  if: github.ref_type == 'tag' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
     #  uses: actions/upload-artifact@v4
     #  with:
-    #    name: ${{ env.PROJECT }}-${{ matrix.goos }}-${{ matrix.goarch }}
-    #    path: dist/${{ env.PROJECT }}-${{ matrix.goos }}-${{ matrix.goarch }}*
+    #    name: ${PROJECT}-${{ matrix.goos }}-${{ matrix.goarch }}
+    #    path: dist/${PROJECT}-${{ matrix.goos }}-${{ matrix.goarch }}*
