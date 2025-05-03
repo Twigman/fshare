@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  workflow_dispatch:  # erlaubt manuelles Ausführen
+  workflow_dispatch:
 
 jobs:
   test:
@@ -22,10 +22,10 @@ jobs:
     - name: Run go vet
       run: go vet ./...
 
-    - name: Tidy & check go.mod/go.sum
+    - name: Tidy & check go.mod/go.sum (safe)
       run: |
         go mod tidy
-        git diff --exit-code go.mod go.sum
+        git diff --exit-code $(find . -maxdepth 1 -name "go.mod" -o -name "go.sum")
 
     - name: Run tests
       run: go test -v ./...
