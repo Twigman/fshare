@@ -42,6 +42,9 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    - name: Set project name variable
+      run: echo "PROJECT=${{ github.event.repository.name }}" >> $GITHUB_ENV
+
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
@@ -50,15 +53,18 @@ jobs:
     - name: Build binaries
       run: |
         mkdir -p dist
-        output_name=myapp-${{ matrix.goos }}-${{ matrix.goarch }}
+        output_name=$PROJECT-${{ matrix.goos }}-${{ matrix.goarch }}
         if [ "${{ matrix.goos }}" == "windows" ]; then
           output_name="${output_name}.exe"
         fi
         GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/$output_name .
 
+    - name: List built files
+      run: ls -l dist/
+
     - name: Upload build artifacts
       if: github.ref_type == 'tag' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
       uses: actions/upload-artifact@v4
       with:
-        name: fshare-${{ matrix.goos }}-${{ matrix.goarch }}
-        path: dist/fshare-${{ matrix.goos }}-${{ matrix.goarch }}*
+        name: ${{ env.PROJECT }}-${{ matrix.goos }}-${{ matrix.goarch }}
+        path: dist/${{ env.PROJECT }}-${{ matrix.goos }}-${{ matrix.goarch }}*
