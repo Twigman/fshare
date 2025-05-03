@@ -33,7 +33,7 @@ func LoadConfig(path string) (*Config, error) {
 func (c *Config) Validate() error {
 	// port
 	if c.Port == 0 {
-		return errors.New("port value is probably not set. 0 is not allowed")
+		return errors.New("port value is probably not set (0 is not allowed)")
 	}
 	if c.Port < 1 || c.Port > 65535 {
 		return errors.New("port value is not valid")

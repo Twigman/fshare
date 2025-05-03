@@ -6,33 +6,126 @@ import (
 	"testing"
 )
 
-func TestLoadConfig_Success(t *testing.T) {
-	tmpFile := filepath.Join(t.TempDir(), "config.json")
-	json := `{
+var testConfigMap = map[string]string{
+	"valid": `{
 		"port": 8080,
 		"upload_path": "/tmp",
 		"max_file_size_in_mb": 5
-	}`
+	}`,
+	"noMaxFileSize": `{
+		"port": 8080,
+		"upload_path": "/tmp"
+	}`,
+	"noUploadPath": `{
+		"port": 8080,
+		"max_file_size_in_mb": 5
+	}`,
+	"noPort": `{
+		"upload_path": "/tmp",
+		"max_file_size_in_mb": 5
+	}`,
+	"invalidJSON": `{
+		"port": 8080,
+		"upload_path": "/tmp",
+		"max_file_size_in_mb": 5`,
+	"wrongFieldType_maxFileSizeIsString": `{
+		"port": 8080,
+		"upload_path": "/tmp",
+		"max_file_size_in_mb": "five"
+	}`,
+	"wrongFieldType_portIsString": `{
+		"port": "8080",
+		"upload_path": "/tmp",
+		"max_file_size_in_mb": 5
+	}`,
+	"valid_2": `{
+		"port": 6100,
+		"upload_path": "/tmp",
+		"max_file_size_in_mb": 0
+	}`,
+	"invalidPort": `{
+		"port": -1,
+		"upload_path": "/tmp",
+		"max_file_size_in_mb": 1
+	}`,
+	"emptyUploadPath": `{
+		"port": 8080,
+		"upload_path": "",
+		"max_file_size_in_mb": 1
+	}`,
+}
+
+func writeTestConfigToTempFile(t *testing.T, json string) string {
+	t.Helper()
+	tmpFile := filepath.Join(t.TempDir(), "config.json")
 	if err := os.WriteFile(tmpFile, []byte(json), 0644); err != nil {
-		t.Fatalf("Could not write temp config file: %v", err)
+		t.Fatalf("could not write temp config file: %v", err)
+	}
+	return tmpFile
+}
+
+func TestLoadConfig(t *testing.T) {
+	const uploadLimitBytes5MB = 5 << 20
+	const uploadLimitBytes1MB = 1 << 20
+
+	tests := []struct {
+		name               string
+		key                string
+		expectErr          bool
+		expectedUploadPath string
+		expectedPort       int
+		limitedUpload      bool
+		MaxFileSizeInBytes int64
+	}{
+		{"valid config", "valid", false, "/tmp", 8080, true, uploadLimitBytes5MB},
+		{"no max file size", "noMaxFileSize", false, "/tmp", 8080, false, 0},
+		{"no upload path", "noUploadPath", false, "", 8080, true, uploadLimitBytes5MB},
+		{"no port", "noPort", false, "/tmp", 0, true, uploadLimitBytes5MB},
+		{"invalid JSON", "invalidJSON", true, "/tmp", 8080, false, 0},
+		{"wrong field type - max file size", "wrongFieldType_maxFileSizeIsString", true, "/tmp", 8080, false, 0},
+		{"wrong field type - port", "wrongFieldType_portIsString", true, "/tmp", 0, true, uploadLimitBytes5MB},
+		{"valid config 2", "valid_2", false, "/tmp", 6100, false, 0},
+		{"invalid port", "invalidPort", false, "/tmp", -1, true, uploadLimitBytes1MB},
+		{"empty upload path", "emptyUploadPath", false, "", 8080, true, uploadLimitBytes1MB},
 	}
 
-	cfg, err := LoadConfig(tmpFile)
-	if err != nil {
-		t.Fatalf("Expected no error, got %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			json, ok := testConfigMap[tt.key]
+			if !ok {
+				t.Fatalf("test %q not found", tt.key)
+			}
 
-	if cfg.Port != 8080 {
-		t.Errorf("Expected port 8080, got %d", cfg.Port)
-	}
-	if cfg.UploadPath != "/tmp" {
-		t.Errorf("Unexpected upload_path: %s", cfg.UploadPath)
-	}
-	if !cfg.IsUploadLimited() {
-		t.Error("Expected upload to be limited")
-	}
-	if cfg.MaxFileSizeBytes() != 5<<20 {
-		t.Errorf("Expected 5 MB in bytes, got %d", cfg.MaxFileSizeBytes())
+			path := writeTestConfigToTempFile(t, json)
+			cfg, err := LoadConfig(path)
+
+			if tt.expectErr {
+				if err == nil {
+					t.Error("expected error, got none")
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if cfg.UploadPath != tt.expectedUploadPath {
+				t.Errorf("Unexpected upload_path: %s", cfg.UploadPath)
+			}
+
+			if cfg.Port != tt.expectedPort {
+				t.Errorf("expected port %d, got %d", tt.expectedPort, cfg.Port)
+			}
+
+			if cfg.IsUploadLimited() != tt.limitedUpload {
+				t.Error("Expected upload to be limited")
+			}
+
+			if cfg.MaxFileSizeBytes() != tt.MaxFileSizeInBytes {
+				t.Errorf("Expected %d bytes upload limit, got %d", tt.MaxFileSizeInBytes, cfg.MaxFileSizeBytes())
+			}
+		})
 	}
 }
 
@@ -49,182 +142,53 @@ func TestLoadConfig_FileNotExist(t *testing.T) {
 	}
 }
 
-func TestLoadConfig_Default_NoMaxFileSize(t *testing.T) {
-	tmpFile := filepath.Join(t.TempDir(), "config.json")
-
-	partialJSON := `{
-		"port": 8080,
-		"upload_path": "/tmp"
-	}`
-
-	if err := os.WriteFile(tmpFile, []byte(partialJSON), 0644); err != nil {
-		t.Fatalf("Could not write test file: %v", err)
+func TestValidate(t *testing.T) {
+	// only tests that can be loaded successfully
+	tests := []struct {
+		name           string
+		key            string
+		expectValidErr bool
+		expectErrMsg   string
+	}{
+		{"valid config", "valid", false, ""},
+		{"no max file size", "noMaxFileSize", false, ""},
+		{"no upload path", "noUploadPath", true, "upload_path is required"},
+		{"no port", "noPort", true, "port value is probably not set (0 is not allowed)"},
+		{"valid config 2", "valid_2", false, ""},
+		{"invalid port", "invalidPort", true, "port value is not valid"},
+		{"empty upload path", "emptyUploadPath", true, "upload_path is required"},
 	}
 
-	cfg, err := LoadConfig(tmpFile)
-	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
-	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			json, ok := testConfigMap[tt.key]
+			if !ok {
+				t.Fatalf("fixture %q not found", tt.key)
+			}
 
-	if cfg.MaxFileSizeInMB != 0 {
-		t.Errorf("Expected default MaxFileSizeInMB == 0, got: %d", cfg.MaxFileSizeInMB)
-	}
-	if cfg.IsUploadLimited() {
-		t.Error("Expected IsUploadLimited() to be false for default value")
-	}
-}
+			path := writeTestConfigToTempFile(t, json)
+			cfg, err := LoadConfig(path)
 
-func TestLoadConfig_Default_NoUploadPath(t *testing.T) {
-	tmpFile := filepath.Join(t.TempDir(), "config.json")
+			if err != nil {
+				t.Errorf("Error loading config for validation: %v", err)
+			}
 
-	partialJSON := `{
-		"port": 8080,
-		"max_file_size_in_mb": 5
-	}`
+			err = cfg.Validate()
 
-	if err := os.WriteFile(tmpFile, []byte(partialJSON), 0644); err != nil {
-		t.Fatalf("Could not write test file: %v", err)
-	}
+			if tt.expectValidErr {
+				if err == nil {
+					t.Errorf("Expected validation error, but got nil")
+				}
 
-	cfg, err := LoadConfig(tmpFile)
-	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
-	}
-
-	if cfg.UploadPath != "" {
-		t.Errorf("Expected default upload_path == \"\", got: %s", cfg.UploadPath)
-	}
-
-	err = cfg.Validate()
-	if err == nil {
-		t.Errorf("Expected validation error for upload_path, got: %v", err)
-	}
-}
-
-func TestLoadConfig_Default_NoPort(t *testing.T) {
-	tmpFile := filepath.Join(t.TempDir(), "config.json")
-
-	partialJSON := `{
-		"upload_path": "/tmp",
-		"max_file_size_in_mb": 5
-	}`
-
-	if err := os.WriteFile(tmpFile, []byte(partialJSON), 0644); err != nil {
-		t.Fatalf("Could not write test file: %v", err)
-	}
-
-	cfg, err := LoadConfig(tmpFile)
-	if err != nil {
-		t.Fatalf("Expected no error, got: %v", err)
-	}
-
-	if cfg.Port != 0 {
-		t.Errorf("Expected default Port == 0, got: %d", cfg.Port)
-	}
-
-	err = cfg.Validate()
-	if err == nil {
-		t.Errorf("Expected port value validation error, got: %v", err)
-	}
-}
-
-func TestLoadConfig_InvalidJSONFormat(t *testing.T) {
-	tmpFile := filepath.Join(t.TempDir(), "bad_config.json")
-
-	badJSON := `{
-		"port": 8080,
-		"upload_path": "/tmp",
-		"max_file_size_in_mb": 5`
-
-	if err := os.WriteFile(tmpFile, []byte(badJSON), 0644); err != nil {
-		t.Fatalf("Could not write test file: %v", err)
-	}
-
-	cfg, err := LoadConfig(tmpFile)
-	if err == nil {
-		t.Errorf("Expected error for invalid JSON, got: %v", err)
-	}
-	if cfg != nil {
-		t.Errorf("Expected nil config, got: %+v", cfg)
-	}
-}
-
-func TestLoadConfig_WrongFieldType_MaxFileSize(t *testing.T) {
-	tmpFile := filepath.Join(t.TempDir(), "bad_config.json")
-
-	badJSON := `{
-		"port": 8080,
-		"upload_path": "/tmp",
-		"max_file_size_in_mb": "five"
-		}`
-
-	if err := os.WriteFile(tmpFile, []byte(badJSON), 0644); err != nil {
-		t.Fatalf("Could not write test file: %v", err)
-	}
-
-	cfg, err := LoadConfig(tmpFile)
-	if err == nil {
-		t.Errorf("Expected error for invalid JSON, got: %v", err)
-	}
-	if cfg != nil {
-		t.Errorf("Expected nil config, got: %+v", cfg)
-	}
-}
-
-func TestLoadConfig_WrongFieldType_PortAsString(t *testing.T) {
-	tmpFile := filepath.Join(t.TempDir(), "bad_config.json")
-
-	badJSON := `{
-		"port": "8080",
-		"upload_path": "/tmp",
-		"max_file_size_in_mb": 5
-		}`
-
-	if err := os.WriteFile(tmpFile, []byte(badJSON), 0644); err != nil {
-		t.Fatalf("Could not write test file: %v", err)
-	}
-
-	cfg, err := LoadConfig(tmpFile)
-	if err == nil {
-		t.Errorf("Expected error for invalid JSON, got: %v", err)
-	}
-	if cfg != nil {
-		t.Errorf("Expected nil config, got: %+v", cfg)
-	}
-}
-
-func TestValidate_Valid(t *testing.T) {
-	cfg := &Config{
-		Port:            8080,
-		UploadPath:      t.TempDir(),
-		MaxFileSizeInMB: 0,
-	}
-	if err := cfg.Validate(); err != nil {
-		t.Errorf("Expected valid config, got error: %v", err)
-	}
-}
-
-func TestValidate_InvalidPort(t *testing.T) {
-	cfg := &Config{
-		Port:            -1,
-		UploadPath:      t.TempDir(),
-		MaxFileSizeInMB: 1,
-	}
-	err := cfg.Validate()
-	if err == nil || err.Error() != "port value is not valid" {
-		t.Errorf("Expected invalid port error, got: %v", err)
-	}
-}
-
-func TestValidate_EmptyUploadPath(t *testing.T) {
-	cfg := &Config{
-		Port:            8080,
-		UploadPath:      "",
-		MaxFileSizeInMB: 1,
-	}
-	err := cfg.Validate()
-	if err == nil || err.Error() != "upload_path is required" {
-		t.Errorf("Expected upload_path error, got: %v", err)
+				if err.Error() != tt.expectErrMsg {
+					t.Errorf("Expected error msg %q, but got %q", tt.expectErrMsg, err)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("Expected no validation error, but got: %v", err)
+				}
+			}
+		})
 	}
 }
 
