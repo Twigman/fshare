@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,7 +12,17 @@ import (
 )
 
 func main() {
-	cfg, err := config.LoadConfig("../data/config.json")
+	flagAPIKey := flag.String("api-key", "", "initial API key to start the service")
+	flagComment := flag.String("comment", "", "comment for initial API key")
+	flagConfigPath := flag.String("config", "", "config file path")
+
+	flag.Parse()
+
+	if *flagConfigPath == "" {
+		log.Fatalf("Please provide a config file using the parameter --config.")
+	}
+
+	cfg, err := config.LoadConfig(*flagConfigPath)
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
 	}
@@ -27,10 +38,24 @@ func main() {
 		log.Fatalf("Error loading sqlite: %v", err)
 	}
 
-	_, err = db.SaveFile("test.txt", false, "abc")
-	if err != nil {
-		fmt.Printf("File NOT stored: %v\n", err)
+	// add api-key if passed
+	if *flagAPIKey != "" {
+		_, err := db.SaveAPIKey(*flagAPIKey, *flagComment)
+		if err != nil {
+			log.Fatalf("Error saving initial API key: %v", err)
+		}
+		log.Printf("Initial API key was added.")
 	}
+
+	if ok, _ := db.AnyAPIKeyExists(); !ok {
+		log.Fatalf("No API key exists. Please provide an API key when starting the service by using the parameters --api-key and --comment.")
+	}
+
+	_, err = db.SaveFile("test.txt", false, "123")
+	if err != nil {
+		log.Printf("File NOT stored: %v\n", err)
+	}
+	log.Printf("Testfile stored!")
 
 	if err := startServer(cfg); err != nil {
 		log.Fatalf("Server error: %v", err)

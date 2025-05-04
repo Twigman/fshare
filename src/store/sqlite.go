@@ -1,7 +1,9 @@
 package store
 
 import (
+	"crypto/sha256"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -47,7 +49,7 @@ func (s *SQLite) init() error {
 	_, err = s.db.Exec(`
 	CREATE TABLE IF NOT EXISTS api_key (
 		hashed_key TEXT PRIMARY KEY,
-		owner TEXT,
+		comment TEXT,
 		created_at DATETIME
 	);
 
@@ -96,4 +98,37 @@ func (s *SQLite) SaveFile(name string, isPrivate bool, ownerHashedKey string) (s
 		return "", err
 	}
 	return r_uuid.String(), nil
+}
+
+// SaveAPIKey hashes an API key, adds it to database and returns it
+func (s *SQLite) SaveAPIKey(apikey string, comment string) (string, error) {
+	hash := sha256.Sum256([]byte(apikey))
+	keyHash := hex.EncodeToString(hash[:])
+
+	_, err := s.db.Exec(`
+		INSERT INTO api_key (hashed_key, owner, created_at)
+		VALUES (?, ?, ?)
+	`, keyHash, comment, time.Now().UTC().Format(time.RFC3339))
+
+	if err != nil {
+		return "", fmt.Errorf("error adding API key: %v", err)
+	}
+
+	return keyHash, nil
+}
+
+// AnyAPIKeyExists checks whether an entry is stored in table api_key
+func (s *SQLite) AnyAPIKeyExists() (bool, error) {
+	row := s.db.QueryRow(`SELECT 1 FROM api_key LIMIT 1`)
+
+	var dummy int
+	err := row.Scan(&dummy)
+
+	if err == sql.ErrNoRows {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
