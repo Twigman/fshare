@@ -8,10 +8,11 @@ import (
 )
 
 type Config struct {
-	Port            int    `json:"port"`
-	UploadPath      string `json:"upload_path"`
-	MaxFileSizeInMB int64  `json:"max_file_size_in_mb"` // 0 = no limit
-	RegisterPath    string `json:"file_register_path"`
+	Port                     int    `json:"port"`
+	UploadPath               string `json:"upload_path"`
+	MaxFileSizeInMB          int64  `json:"max_file_size_in_mb"` // 0 = no limit
+	SQLitePath               string `json:"sqlite_db_path"`
+	ContinuousFileValidation bool   `json:"continuous_file_validation"`
 }
 
 // LoadConfig loads the configuration from a given path.

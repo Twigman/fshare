@@ -6,7 +6,6 @@ import (
 
 type HTTPHandler struct {
 	config *config.Config
-	reg    *config.FileRegister
 }
 
 func NewHTTPHandler(config *config.Config) *HTTPHandler {

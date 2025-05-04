@@ -7,6 +7,7 @@ import (
 
 	"github.com/twigman/fshare/src/config"
 	"github.com/twigman/fshare/src/httpapi"
+	"github.com/twigman/fshare/src/store"
 )
 
 func main() {
@@ -20,6 +21,16 @@ func main() {
 	}
 
 	log.Printf("Config loaded. Port: %d, UploadPath: %s\n, MaxFileSizeInMB: %d\n", cfg.Port, cfg.UploadPath, cfg.MaxFileSizeInMB)
+
+	db, err := store.NewDB(cfg.SQLitePath)
+	if err != nil {
+		log.Fatalf("Error loading sqlite: %v", err)
+	}
+
+	_, err = db.SaveFile("test.txt", false, "abc")
+	if err != nil {
+		fmt.Printf("File NOT stored: %v\n", err)
+	}
 
 	if err := startServer(cfg); err != nil {
 		log.Fatalf("Server error: %v", err)
