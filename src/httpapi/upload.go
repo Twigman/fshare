@@ -2,22 +2,22 @@ package httpapi
 
 import (
 	"fmt"
-	"io"
 	"net/http"
-	"os"
-	"path/filepath"
+	"strconv"
+
+	"github.com/twigman/fshare/src/store"
 )
 
-func (h *HTTPHandler) UploadHandler(w http.ResponseWriter, r *http.Request) {
+func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 	// upload limit
-	if h.config.IsUploadLimited() {
-		r.Body = http.MaxBytesReader(w, r.Body, h.config.MaxFileSizeBytes())
+	if s.config.IsUploadLimited() {
+		r.Body = http.MaxBytesReader(w, r.Body, s.config.MaxFileSizeBytes())
 		// space in RAM
-		if err := r.ParseMultipartForm(h.config.MaxFileSizeBytes()); err != nil {
+		if err := r.ParseMultipartForm(s.config.MaxFileSizeBytes()); err != nil {
 			http.Error(w, "File too large", http.StatusRequestEntityTooLarge)
 			return
 		}
@@ -37,21 +37,31 @@ func (h *HTTPHandler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	// remove paths (../../file.txt -> file.txt)
-	filename := filepath.Base(header.Filename)
-	dst, err := os.Create(filepath.Join(h.config.UploadPath, filename))
+	// read fields
+	apiKey := r.FormValue("api_key")
+	isPrivate := r.FormValue("is_private") == "true"
+	//folder := r.FormValue("folder") == ""
+	autoDelInH := r.FormValue("auto_del_in_h")
+
+	i, err := strconv.Atoi(autoDelInH)
+	if err != nil {
+		http.Error(w, "Invalid value for auto_del_in_h", http.StatusBadRequest)
+		return
+	}
+
+	res := &store.Resource{
+		Name:              header.Filename,
+		IsPrivate:         isPrivate,
+		OwnerHashedKey:    store.HashAPIKey(apiKey),
+		AutoDeleteInHours: i,
+	}
+
+	file_uuid, err := s.fileService.SaveUploadedFile(file, res)
 	if err != nil {
 		http.Error(w, "Could not save file", http.StatusInternalServerError)
 		return
 	}
-	defer dst.Close()
-
-	_, err = io.Copy(dst, file)
-	if err != nil {
-		http.Error(w, "Could not write file", http.StatusInternalServerError)
-		return
-	}
 
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "Uploaded successfully: %s\n", header.Filename)
+	fmt.Fprintf(w, "Uploaded successfully: %s\n", file_uuid)
 }

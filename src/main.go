@@ -31,16 +31,18 @@ func main() {
 		log.Fatalf("Config validation error: %v", err)
 	}
 
-	log.Printf("Config loaded. Port: %d, UploadPath: %s\n, MaxFileSizeInMB: %d\n", cfg.Port, cfg.UploadPath, cfg.MaxFileSizeInMB)
+	log.Printf("Config loaded\n")
 
 	db, err := store.NewDB(cfg.SQLitePath)
 	if err != nil {
 		log.Fatalf("Error loading sqlite: %v", err)
 	}
 
-	// add api-key if passed
+	apiKeyService := store.NewAPIKeyService(db)
+
+	// add api-key if provided
 	if *flagAPIKey != "" {
-		_, err := db.SaveAPIKey(*flagAPIKey, *flagComment)
+		_, err := apiKeyService.AddAPIKey(*flagAPIKey, *flagComment)
 		if err != nil {
 			log.Fatalf("Error saving initial API key: %v", err)
 		}
@@ -51,25 +53,21 @@ func main() {
 		log.Fatalf("No API key exists. Please provide an API key when starting the service by using the parameters --api-key and --comment.")
 	}
 
-	_, err = db.SaveFile("test.txt", false, "123")
-	if err != nil {
-		log.Printf("File NOT stored: %v\n", err)
-	}
-	log.Printf("Testfile stored!")
+	fileService := store.NewFileService(cfg.UploadPath, db)
 
-	if err := startServer(cfg); err != nil {
+	if err := startServer(cfg, apiKeyService, fileService); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
 }
 
-func startServer(cfg *config.Config) error {
+func startServer(cfg *config.Config, apiKeyService *store.APIKeyService, fileService *store.FileService) error {
 	addr := fmt.Sprintf(":%d", cfg.Port)
-	fmt.Printf("Starting server on %s ...\n", addr)
+	log.Printf("Starting server on %s ...\n", addr)
 
-	handler := httpapi.NewHTTPHandler(cfg)
+	restService := httpapi.NewRESTService(cfg, apiKeyService, fileService)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/upload", handler.UploadHandler)
+	mux.HandleFunc("/upload", restService.UploadHandler)
 
 	return http.ListenAndServe(addr, mux)
 }

@@ -12,18 +12,44 @@ import (
 	"testing"
 
 	"github.com/twigman/fshare/src/config"
+	"github.com/twigman/fshare/src/store"
 )
+
+func initServices(cfg *config.Config) (*store.APIKeyService, *store.FileService, error) {
+	db, err := store.NewDB(cfg.SQLitePath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	fileService := store.NewFileService(cfg.UploadPath, db)
+	apiKeyService := store.NewAPIKeyService(db)
+
+	_, err = apiKeyService.AddAPIKey("123", "123")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return apiKeyService, fileService, nil
+}
 
 func TestUploadHandler_Success(t *testing.T) {
 	uploadDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:      uploadDir,
-		MaxFileSizeInMB: 5,
-		Port:            8080,
+		UploadPath:               uploadDir,
+		MaxFileSizeInMB:          5,
+		Port:                     8080,
+		SQLitePath:               filepath.Join(uploadDir, "fshare_test.sqlite"),
+		ContinuousFileValidation: false,
 	}
-	handler := NewHTTPHandler(cfg)
 
-	ts := httptest.NewServer(http.HandlerFunc(handler.UploadHandler))
+	apiKeyService, fileService, err := initServices(cfg)
+	if err != nil {
+		t.Fatalf("Can not initialize test services: %v", err)
+	}
+
+	restService := NewRESTService(cfg, apiKeyService, fileService)
+
+	ts := httptest.NewServer(http.HandlerFunc(restService.UploadHandler))
 	defer ts.Close()
 
 	testFilename := "test.txt"
@@ -74,12 +100,18 @@ func TestUploadHandler_Success(t *testing.T) {
 
 func TestUploadHandler_WrongMethod(t *testing.T) {
 	cfg := &config.Config{UploadPath: "./doesnotmatter/"}
-	handler := NewHTTPHandler(cfg)
+
+	apiKeyService, fileService, err := initServices(cfg)
+	if err != nil {
+		t.Fatalf("Can not initialize test services: %v", err)
+	}
+
+	restService := NewRESTService(cfg, apiKeyService, fileService)
 
 	req := httptest.NewRequest("GET", "/upload", nil)
 	w := httptest.NewRecorder()
 
-	handler.UploadHandler(w, req)
+	restService.UploadHandler(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusMethodNotAllowed {
@@ -94,8 +126,14 @@ func TestUploadHandler_TooLarge(t *testing.T) {
 		MaxFileSizeInMB: 1,
 		Port:            8080,
 	}
-	handler := NewHTTPHandler(cfg)
-	ts := httptest.NewServer(http.HandlerFunc(handler.UploadHandler))
+
+	apiKeyService, fileService, err := initServices(cfg)
+	if err != nil {
+		t.Fatalf("Can not initialize test services: %v", err)
+	}
+
+	restService := NewRESTService(cfg, apiKeyService, fileService)
+	ts := httptest.NewServer(http.HandlerFunc(restService.UploadHandler))
 	defer ts.Close()
 
 	// create 2 MiB content
@@ -138,8 +176,14 @@ func TestUploadHandler_MissingFileField(t *testing.T) {
 		UploadPath:      uploadDir,
 		MaxFileSizeInMB: 5,
 	}
-	handler := NewHTTPHandler(cfg)
-	ts := httptest.NewServer(http.HandlerFunc(handler.UploadHandler))
+	apiKeyService, fileService, err := initServices(cfg)
+	if err != nil {
+		t.Fatalf("Can not initialize test services: %v", err)
+	}
+
+	restService := NewRESTService(cfg, apiKeyService, fileService)
+
+	ts := httptest.NewServer(http.HandlerFunc(restService.UploadHandler))
 	defer ts.Close()
 
 	// create multipart without "file"-Field

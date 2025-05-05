@@ -1,13 +1,10 @@
 package store
 
 import (
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"fmt"
 	"time"
 
-	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -16,14 +13,14 @@ type SQLite struct {
 }
 
 type Resource struct {
-	uuid              string
-	name              string
-	isPrivate         bool
-	isFile            bool
-	parentUUID        *string
-	ownerHashedKey    string
-	createdAt         time.Time
-	autoDeleteInHours int
+	UUID              string
+	Name              string
+	IsPrivate         bool
+	IsFile            bool
+	ParentUUID        *string
+	OwnerHashedKey    string
+	CreatedAt         time.Time
+	AutoDeleteInHours int
 }
 
 func NewDB(path string) (*SQLite, error) {
@@ -69,52 +66,44 @@ func (s *SQLite) init() error {
 	return err
 }
 
-func (s *SQLite) SaveResource(r Resource) (string, error) {
+func (s *SQLite) SaveResource(r Resource) error {
 	_, err := s.db.Exec(`
 		INSERT INTO resource (
 			uuid, name, is_private, is_file, parent_uuid, owner_hashed_key, created_at, autodelete_in_hours
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, r.uuid, r.name, r.isPrivate, r.isFile, r.parentUUID, r.ownerHashedKey, r.createdAt, r.autoDeleteInHours)
+	`, r.UUID, r.Name, r.IsPrivate, r.IsFile, r.ParentUUID, r.OwnerHashedKey, r.CreatedAt, r.AutoDeleteInHours)
 
 	if err != nil {
-		return "", err
+		return err
 	}
-	return r.uuid, nil
+	return nil
 }
 
-func (s *SQLite) SaveFile(name string, isPrivate bool, ownerHashedKey string) (string, error) {
-	r_uuid, err := uuid.NewV7()
-	if err != nil {
-		return "", fmt.Errorf("UUID generation error: %v", err)
-	}
-
-	_, err = s.db.Exec(`
+func (s *SQLite) saveFile(uuid string, name string, isPrivate bool, ownerHashedKey string, autoDel int) error {
+	_, err := s.db.Exec(`
 		INSERT INTO resource (
 			uuid, name, is_private, is_file, parent_uuid, owner_hashed_key, created_at, autodelete_in_hours
-		) VALUES (?, ?, ?, TRUE, NULL, ?, ?, 0)
-	`, r_uuid.String(), name, isPrivate, ownerHashedKey, time.Now().UTC().Format(time.RFC3339))
+		) VALUES (?, ?, ?, TRUE, NULL, ?, ?, ?)
+	`, uuid, name, isPrivate, ownerHashedKey, time.Now().UTC().Format(time.RFC3339), autoDel)
 
 	if err != nil {
-		return "", err
+		return err
 	}
-	return r_uuid.String(), nil
+	return nil
 }
 
-// SaveAPIKey hashes an API key, adds it to database and returns it
-func (s *SQLite) SaveAPIKey(apikey string, comment string) (string, error) {
-	hash := sha256.Sum256([]byte(apikey))
-	keyHash := hex.EncodeToString(hash[:])
-
+// SaveAPIKey saves a hashed API key and a comment
+func (s *SQLite) saveAPIKey(hash string, comment string) error {
 	_, err := s.db.Exec(`
 		INSERT INTO api_key (hashed_key, owner, created_at)
 		VALUES (?, ?, ?)
-	`, keyHash, comment, time.Now().UTC().Format(time.RFC3339))
+	`, hash, comment, time.Now().UTC().Format(time.RFC3339))
 
 	if err != nil {
-		return "", fmt.Errorf("error adding API key: %v", err)
+		return fmt.Errorf("error adding API key: %v", err)
 	}
 
-	return keyHash, nil
+	return nil
 }
 
 // AnyAPIKeyExists checks whether an entry is stored in table api_key
