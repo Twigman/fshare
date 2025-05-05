@@ -49,7 +49,7 @@ func main() {
 		log.Printf("Initial API key was added.")
 	}
 
-	if ok, _ := db.AnyAPIKeyExists(); !ok {
+	if ok, _ := apiKeyService.AnyAPIKeyExists(); !ok {
 		log.Fatalf("No API key exists. Please provide an API key when starting the service by using the parameters --api-key and --comment.")
 	}
 

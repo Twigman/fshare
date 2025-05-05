@@ -1,9 +1,10 @@
 package httpapi
 
 import (
-	"fmt"
+	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/twigman/fshare/src/store"
 )
@@ -13,6 +14,20 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+		return
+	}
+	const prefix = "Bearer "
+	if !strings.HasPrefix(authHeader, prefix) {
+		http.Error(w, "Invalid Authorization scheme", http.StatusUnauthorized)
+		return
+	}
+
+	apiKey := strings.TrimPrefix(authHeader, prefix)
+
 	// upload limit
 	if s.config.IsUploadLimited() {
 		r.Body = http.MaxBytesReader(w, r.Body, s.config.MaxFileSizeBytes())
@@ -36,9 +51,7 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer file.Close()
-
 	// read fields
-	apiKey := r.FormValue("api_key")
 	isPrivate := r.FormValue("is_private") == "true"
 	//folder := r.FormValue("folder") == ""
 	autoDelInH := r.FormValue("auto_del_in_h")
@@ -63,5 +76,8 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "Uploaded successfully: %s\n", file_uuid)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"uuid": file_uuid,
+	})
 }

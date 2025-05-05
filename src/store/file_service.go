@@ -11,11 +11,11 @@ import (
 )
 
 type FileService struct {
-	db         *SQLite
+	db         Database
 	uploadPath string
 }
 
-func NewFileService(uploadPath string, db *SQLite) *FileService {
+func NewFileService(uploadPath string, db Database) *FileService {
 	return &FileService{uploadPath: uploadPath, db: db}
 }
 

@@ -76,6 +76,7 @@ func TestUploadHandler_Success(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer 123")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -158,6 +159,7 @@ func TestUploadHandler_TooLarge(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer 123")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -197,6 +199,7 @@ func TestUploadHandler_MissingFileField(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer 123")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -206,5 +209,25 @@ func TestUploadHandler_MissingFileField(t *testing.T) {
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Expected status %d, got %d", http.StatusBadRequest, resp.StatusCode)
+	}
+}
+
+func TestUploadHandler_MissingAuthHeader(t *testing.T) {
+	cfg := &config.Config{UploadPath: t.TempDir()}
+
+	apiKeyService, fileService, err := initServices(cfg)
+	if err != nil {
+		t.Fatalf("Setup failed: %v", err)
+	}
+	restService := NewRESTService(cfg, apiKeyService, fileService)
+
+	req := httptest.NewRequest(http.MethodPost, "/upload", nil)
+	w := httptest.NewRecorder()
+
+	restService.UploadHandler(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized, got %d", resp.StatusCode)
 	}
 }

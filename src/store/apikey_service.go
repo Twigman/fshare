@@ -22,6 +22,10 @@ func (a *APIKeyService) AddAPIKey(api_key string, comment string) (string, error
 	return hashedKey, nil
 }
 
+func (a *APIKeyService) AnyAPIKeyExists() (bool, error) {
+	return a.db.anyAPIKeyExists()
+}
+
 func IsValidAPIKey(api_key string) bool {
 	HashAPIKey(api_key)
 

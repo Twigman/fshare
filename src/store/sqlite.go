@@ -12,17 +12,6 @@ type SQLite struct {
 	db *sql.DB
 }
 
-type Resource struct {
-	UUID              string
-	Name              string
-	IsPrivate         bool
-	IsFile            bool
-	ParentUUID        *string
-	OwnerHashedKey    string
-	CreatedAt         time.Time
-	AutoDeleteInHours int
-}
-
 func NewDB(path string) (*SQLite, error) {
 	db, err := sql.Open("sqlite3", path)
 	if err != nil {
@@ -66,7 +55,7 @@ func (s *SQLite) init() error {
 	return err
 }
 
-func (s *SQLite) SaveResource(r Resource) error {
+func (s *SQLite) saveResource(r Resource) error {
 	_, err := s.db.Exec(`
 		INSERT INTO resource (
 			uuid, name, is_private, is_file, parent_uuid, owner_hashed_key, created_at, autodelete_in_hours
@@ -95,7 +84,7 @@ func (s *SQLite) saveFile(uuid string, name string, isPrivate bool, ownerHashedK
 // SaveAPIKey saves a hashed API key and a comment
 func (s *SQLite) saveAPIKey(hash string, comment string) error {
 	_, err := s.db.Exec(`
-		INSERT INTO api_key (hashed_key, owner, created_at)
+		INSERT INTO api_key (hashed_key, comment, created_at)
 		VALUES (?, ?, ?)
 	`, hash, comment, time.Now().UTC().Format(time.RFC3339))
 
@@ -107,7 +96,7 @@ func (s *SQLite) saveAPIKey(hash string, comment string) error {
 }
 
 // AnyAPIKeyExists checks whether an entry is stored in table api_key
-func (s *SQLite) AnyAPIKeyExists() (bool, error) {
+func (s *SQLite) anyAPIKeyExists() (bool, error) {
 	row := s.db.QueryRow(`SELECT 1 FROM api_key LIMIT 1`)
 
 	var dummy int
