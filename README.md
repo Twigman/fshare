@@ -25,3 +25,9 @@ Following starts:
 ```
 go run . --config "../data/config.json"
 ```
+
+Upload a file:
+
+```
+curl -X POST http://localhost:8080/upload   -H "Authorization: Bearer 123"   -F "file=@../data/config.json"   -F "is_private=true"   -F "auto_del_in_h=24"
+```
