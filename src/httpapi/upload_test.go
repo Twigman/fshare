@@ -38,7 +38,7 @@ func TestUploadHandler_Success(t *testing.T) {
 		UploadPath:               uploadDir,
 		MaxFileSizeInMB:          5,
 		Port:                     8080,
-		SQLitePath:               filepath.Join(uploadDir, "fshare_test.sqlite"),
+		SQLitePath:               filepath.Join(uploadDir, "test_db.sqlite"),
 		ContinuousFileValidation: false,
 	}
 
@@ -52,8 +52,8 @@ func TestUploadHandler_Success(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(restService.UploadHandler))
 	defer ts.Close()
 
-	testFilename := "test.txt"
-	testContent := "Hello World\nTest!123%"
+	const testFilename = "test.txt"
+	const testContent = "Hello World\nTest!123%"
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -66,6 +66,9 @@ func TestUploadHandler_Success(t *testing.T) {
 	if _, err := io.Copy(part, strings.NewReader(testContent)); err != nil {
 		t.Fatalf("Copy failed: %v", err)
 	}
+
+	writer.WriteField("auto_del_in_h", "0")
+	writer.WriteField("is_private", "true")
 
 	if err := writer.Close(); err != nil {
 		t.Fatalf("Writer close failed: %v", err)

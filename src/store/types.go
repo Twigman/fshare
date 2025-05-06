@@ -2,13 +2,6 @@ package store
 
 import "time"
 
-type Database interface {
-	init() error
-	saveResource(r Resource) error
-	saveFile(uuid string, name string, isPrivate bool, ownerHashedKey string, autoDel int) error
-	saveAPIKey(hash string, comment string) error
-}
-
 type Resource struct {
 	UUID              string
 	Name              string

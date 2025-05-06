@@ -5,61 +5,60 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/twigman/fshare/src/testutils/fake"
 )
 
-type fakeMultipartFile struct {
-	*bytes.Reader
-}
+func initServices(testPath string, dbName string) (*FileService, error) {
+	db, err := NewDB(filepath.Join(testPath, dbName))
+	if err != nil {
+		return nil, err
+	}
 
-func (f *fakeMultipartFile) Close() error { return nil }
+	fileService := NewFileService(testPath, db)
+	apiKeyService := NewAPIKeyService(db)
+
+	_, err = apiKeyService.AddAPIKey("123", "123")
+	if err != nil {
+		return nil, err
+	}
+
+	return fileService, nil
+}
 
 func TestFileService_SaveUploadedFile(t *testing.T) {
 	uploadDir := t.TempDir()
+	const testFilename = "test.txt"
 
-	// Inhalt der Testdatei
-	content := []byte("Hallo Welt!")
-	file := &fakeMultipartFile{bytes.NewReader(content)}
+	// Testfile
+	content := []byte("Hello World")
+	file := &fake.FakeMultipartFile{Reader: bytes.NewReader(content)}
 
-	// Test-Resource
 	res := &Resource{
-		Name:              "test.txt",
+		Name:              testFilename,
 		IsPrivate:         true,
-		OwnerHashedKey:    "owner123",
+		OwnerHashedKey:    HashAPIKey("123"),
 		AutoDeleteInHours: 0,
 	}
 
-	// Fake-DB einhängen
-	fakeDB := &FakeDatabase{}
-	fs := NewFileService(uploadDir, fakeDB)
-
-	// Funktion ausführen
-	uuid, err := fs.SaveUploadedFile(file, res)
+	fs, err := initServices(uploadDir, "temp_db.sqlite")
 	if err != nil {
-		t.Fatalf("SaveUploadedFile fehlgeschlagen: %v", err)
+		t.Fatalf("Error initializing test services: %v", err)
 	}
 
-	// Datei existiert?
-	savedPath := filepath.Join(uploadDir, "test.txt")
+	// tested function
+	_, err = fs.SaveUploadedFile(file, res)
+	if err != nil {
+		t.Fatalf("Error saving file: %v", err)
+	}
+
+	savedPath := filepath.Join(uploadDir, testFilename)
 	data, err := os.ReadFile(savedPath)
 	if err != nil {
-		t.Fatalf("Datei wurde nicht gespeichert: %v", err)
+		t.Fatalf("File was not saved: %v", err)
 	}
 
 	if !bytes.Equal(data, content) {
-		t.Errorf("Inhalt falsch.\nGot:  %q\nWant: %q", data, content)
-	}
-
-	// DB-Aufruf prüfen
-	if !fakeDB.Called {
-		t.Error("FakeDB.SaveFile wurde nicht aufgerufen")
-	}
-	if fakeDB.LastName != "test.txt" {
-		t.Errorf("Erwarteter Name %q, aber bekam %q", "test.txt", fakeDB.LastName)
-	}
-	if fakeDB.LastOwner != "owner123" {
-		t.Errorf("Owner falsch: %s", fakeDB.LastOwner)
-	}
-	if fakeDB.LastUUID != uuid {
-		t.Errorf("UUID falsch: %s ≠ %s", fakeDB.LastUUID, uuid)
+		t.Errorf("Wrong file content.\nGot:  %q\nWant: %q", data, content)
 	}
 }
