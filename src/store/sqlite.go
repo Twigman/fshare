@@ -2,8 +2,8 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
-	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -55,7 +55,7 @@ func (s *SQLite) init() error {
 	return err
 }
 
-func (s *SQLite) saveResource(r Resource) error {
+func (s *SQLite) saveResource(r *Resource) error {
 	_, err := s.db.Exec(`
 		INSERT INTO resource (
 			uuid, name, is_private, is_file, parent_uuid, owner_hashed_key, created_at, autodelete_in_hours
@@ -68,25 +68,12 @@ func (s *SQLite) saveResource(r Resource) error {
 	return nil
 }
 
-func (s *SQLite) saveFile(uuid string, name string, isPrivate bool, ownerHashedKey string, autoDel int) error {
-	_, err := s.db.Exec(`
-		INSERT INTO resource (
-			uuid, name, is_private, is_file, parent_uuid, owner_hashed_key, created_at, autodelete_in_hours
-		) VALUES (?, ?, ?, TRUE, NULL, ?, ?, ?)
-	`, uuid, name, isPrivate, ownerHashedKey, time.Now().UTC().Format(time.RFC3339), autoDel)
-
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-// SaveAPIKey saves a hashed API key and a comment
-func (s *SQLite) saveAPIKey(hash string, comment string) error {
+// insertAPIKey saves a hashed API key, a comment and the timestamp
+func (s *SQLite) insertAPIKey(key *APIKey) error {
 	_, err := s.db.Exec(`
 		INSERT INTO api_key (hashed_key, comment, created_at)
 		VALUES (?, ?, ?)
-	`, hash, comment, time.Now().UTC().Format(time.RFC3339))
+	`, key.HashedKey, key.Comment, key.CreatedAt)
 
 	if err != nil {
 		return fmt.Errorf("error adding API key: %v", err)
@@ -95,18 +82,23 @@ func (s *SQLite) saveAPIKey(hash string, comment string) error {
 	return nil
 }
 
-// AnyAPIKeyExists checks whether an entry is stored in table api_key
-func (s *SQLite) anyAPIKeyExists() (bool, error) {
-	row := s.db.QueryRow(`SELECT 1 FROM api_key LIMIT 1`)
-
-	var dummy int
-	err := row.Scan(&dummy)
-
-	if err == sql.ErrNoRows {
-		return false, nil
+func (s *SQLite) countApiKeyEntries() (int, error) {
+	row := s.db.QueryRow(`SELECT COUNT(*) FROM api_key`)
+	var count int
+	if err := row.Scan(&count); err != nil {
+		return 0, err
 	}
-	if err != nil {
-		return false, err
+	return count, nil
+}
+
+func (s *SQLite) findAPIKeyByHash(hash string) (*APIKey, error) {
+	row := s.db.QueryRow(`SELECT hashed_key, owner, created_at FROM api_key WHERE hashed_key = ?`, hash)
+	var k APIKey
+	if err := row.Scan(&k.HashedKey, &k.Comment, &k.CreatedAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
 	}
-	return true, nil
+	return &k, nil
 }

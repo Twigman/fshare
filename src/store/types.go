@@ -12,3 +12,9 @@ type Resource struct {
 	CreatedAt         time.Time
 	AutoDeleteInHours int
 }
+
+type APIKey struct {
+	HashedKey string
+	Comment   string
+	CreatedAt time.Time
+}

@@ -3,6 +3,7 @@ package store
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"time"
 )
 
 type APIKeyService struct {
@@ -13,23 +14,39 @@ func NewAPIKeyService(db *SQLite) *APIKeyService {
 	return &APIKeyService{db: db}
 }
 
-func (a *APIKeyService) AddAPIKey(api_key string, comment string) (string, error) {
-	hashedKey := HashAPIKey(api_key)
-	err := a.db.saveAPIKey(hashedKey, comment)
-	if err != nil {
-		return "", err
+func (a *APIKeyService) AddAPIKey(api_key string, comment string) (*APIKey, error) {
+	key := &APIKey{
+		HashedKey: HashAPIKey(api_key),
+		Comment:   comment,
+		CreatedAt: time.Now().UTC(),
 	}
-	return hashedKey, nil
+
+	err := a.db.insertAPIKey(key)
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
 }
 
 func (a *APIKeyService) AnyAPIKeyExists() (bool, error) {
-	return a.db.anyAPIKeyExists()
+	count, err := a.db.countApiKeyEntries()
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
 }
 
-func IsValidAPIKey(api_key string) bool {
-	HashAPIKey(api_key)
+func (a *APIKeyService) IsValidAPIKey(api_key string) (bool, error) {
+	key, err := a.db.findAPIKeyByHash(HashAPIKey(api_key))
+	if err != nil {
+		return false, err
+	}
 
-	return true
+	if key != nil {
+		return true, nil
+	}
+	return false, nil
 }
 
 func HashAPIKey(api_key string) string {

@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/google/uuid"
 )
@@ -39,7 +40,13 @@ func (f *FileService) SaveUploadedFile(file multipart.File, r *Resource) (string
 		return "", err
 	}
 
-	err = f.db.saveFile(file_uuid.String(), safeName, r.IsPrivate, r.OwnerHashedKey, r.AutoDeleteInHours)
+	r.UUID = file_uuid.String()
+	r.IsFile = true
+	r.ParentUUID = nil
+	r.Name = safeName
+	r.CreatedAt = time.Now().UTC()
+
+	err = f.db.saveResource(r)
 	if err != nil {
 		return "", err
 	}

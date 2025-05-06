@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/twigman/fshare/src/testutils/fake"
+	"github.com/twigman/fshare/src/testutil/fake"
 )
 
 func initServices(testPath string, dbName string) (*FileService, error) {
