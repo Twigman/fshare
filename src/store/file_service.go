@@ -56,59 +56,8 @@ func (f *FileService) SaveUploadedFile(file multipart.File, r *Resource) (string
 	return file_uuid.String(), nil
 }
 
-func (s *FileService) buildPathFromResource(r *Resource) (string, error) {
-	parts := []string{r.Name}
-
-	current := r
-	for current.ParentUUID != nil {
-		parent, err := s.db.findResourceByUUID(*current.ParentUUID)
-		if err != nil {
-			return "", err
-		}
-		if parent == nil {
-			return "", fmt.Errorf("parent with UUID %s not found", *current.ParentUUID)
-		}
-		parts = append([]string{parent.Name}, parts...)
-		current = parent
-	}
-
-	return filepath.Join(s.cfg.UploadPath, r.APIKeyUUID, filepath.Join(parts...)), nil
-}
-
-/*
-func (f *FileService) GetOrCreateNewFolder(name string, owner_hashed_key string, path string) (*Resource, string, error) {
-	parts := strings.Split(path, "/")
-	cleaned := make([]string, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			cleaned = append(cleaned, p)
-		}
-	}
-
-	if (len(cleaned) + 1) > f.cfg.MaxFolderDepth {
-		return nil, "", fmt.Errorf("new path is too long")
-	}
-
-	r, err := f.db.findActiveResource(name, hashed_key, parentDir)
-	if err != nil {
-		return nil, "", err
-	}
-
-	if r == nil {
-		// folder does not exist
-
-	}
-
-	path, err := f.buildPathFromResource(r)
-	if err != nil {
-		return nil, "", err
-	}
-	return r, path, nil
-}*/
-
-func (f *FileService) GetOrCreateHomeDir(owner_hashed_key string) (*Resource, error) {
-	key, err := f.db.findAPIKeyByHash(owner_hashed_key)
+func (f *FileService) GetOrCreateHomeDir(hashed_key string) (*Resource, error) {
+	key, err := f.db.findAPIKeyByHash(hashed_key)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +65,7 @@ func (f *FileService) GetOrCreateHomeDir(owner_hashed_key string) (*Resource, er
 		return nil, fmt.Errorf("API key does not exist")
 	}
 
-	// name of user home dir = owner/user hash
+	// name of user home dir = api key uuid
 	r, err := f.db.findActiveResource(key.UUID, key.UUID, nil)
 	if err != nil {
 		return nil, err

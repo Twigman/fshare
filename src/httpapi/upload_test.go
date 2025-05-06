@@ -40,7 +40,6 @@ func TestUploadHandler_Success(t *testing.T) {
 		Port:                     8080,
 		SQLitePath:               filepath.Join(uploadDir, "test_db.sqlite"),
 		ContinuousFileValidation: false,
-		MaxFolderDepth:           3,
 	}
 
 	apiKeyService, fileService, err := initServices(cfg)

@@ -59,13 +59,11 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 	// read fields
 	isPrivate := r.FormValue("is_private") == "true"
-	//folder := r.FormValue("folder") == ""
 	autoDelInH := r.FormValue("auto_del_in_h")
 
 	i, err := strconv.Atoi(autoDelInH)
 	if err != nil {
-		http.Error(w, "Invalid value for auto_del_in_h", http.StatusBadRequest)
-		return
+		i = 24
 	}
 
 	res := &store.Resource{
