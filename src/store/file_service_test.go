@@ -6,44 +6,54 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/twigman/fshare/src/config"
 	"github.com/twigman/fshare/src/testutil/fake"
 )
 
-func initServices(testPath string, dbName string) (*FileService, error) {
-	db, err := NewDB(filepath.Join(testPath, dbName))
+func initServices(cfg *config.Config) (*FileService, *APIKey, error) {
+	db, err := NewDB(cfg.SQLitePath)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	fileService := NewFileService(testPath, db)
+	fileService := NewFileService(cfg, db)
 	apiKeyService := NewAPIKeyService(db)
 
-	_, err = apiKeyService.AddAPIKey("123", "123")
+	key, err := apiKeyService.AddAPIKey("123", "123")
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return fileService, nil
+	return fileService, key, nil
 }
 
 func TestFileService_SaveUploadedFile(t *testing.T) {
 	uploadDir := t.TempDir()
 	const testFilename = "test.txt"
 
+	cfg := &config.Config{
+		UploadPath:               uploadDir,
+		MaxFileSizeInMB:          2,
+		Port:                     8080,
+		SQLitePath:               filepath.Join(uploadDir, "test_db.sqlite"),
+		ContinuousFileValidation: false,
+		MaxFolderDepth:           3,
+	}
+
 	// Testfile
 	content := []byte("Hello World")
 	file := &fake.FakeMultipartFile{Reader: bytes.NewReader(content)}
 
+	fs, key, err := initServices(cfg)
+	if err != nil {
+		t.Fatalf("Error initializing test services: %v", err)
+	}
+
 	res := &Resource{
 		Name:              testFilename,
 		IsPrivate:         true,
-		OwnerHashedKey:    HashAPIKey("123"),
+		APIKeyUUID:        key.UUID,
 		AutoDeleteInHours: 0,
-	}
-
-	fs, err := initServices(uploadDir, "temp_db.sqlite")
-	if err != nil {
-		t.Fatalf("Error initializing test services: %v", err)
 	}
 
 	// tested function

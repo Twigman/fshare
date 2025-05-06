@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
 
 	"github.com/twigman/fshare/src/config"
 	"github.com/twigman/fshare/src/httpapi"
@@ -22,6 +23,9 @@ func main() {
 		log.Fatalf("Please provide a config file using the parameter --config.")
 	}
 
+	/******************************
+	 * config
+	 ******************************/
 	cfg, err := config.LoadConfig(*flagConfigPath)
 	if err != nil {
 		log.Fatalf("Error loading config: %v", err)
@@ -33,28 +37,43 @@ func main() {
 
 	log.Printf("Config loaded\n")
 
+	/******************************
+	 * db
+	 ******************************/
 	db, err := store.NewDB(cfg.SQLitePath)
 	if err != nil {
 		log.Fatalf("Error loading sqlite: %v", err)
 	}
 
+	/******************************
+	 * api key + home dir
+	 ******************************/
 	apiKeyService := store.NewAPIKeyService(db)
+	fileService := store.NewFileService(cfg, db)
 
 	// add api-key if provided
 	if *flagAPIKey != "" {
-		_, err := apiKeyService.AddAPIKey(*flagAPIKey, *flagComment)
+		key, err := apiKeyService.AddAPIKey(*flagAPIKey, *flagComment)
 		if err != nil {
 			log.Fatalf("Error saving initial API key: %v", err)
 		}
 		log.Printf("Initial API key was added.")
+
+		r, err := fileService.GetOrCreateHomeDir(key.HashedKey)
+		if err != nil {
+			log.Fatalf("Error creating home dir: %v", err)
+		}
+
+		log.Printf("Created home dir: %s\n", filepath.Join(cfg.UploadPath, r.Name))
 	}
 
 	if ok, _ := apiKeyService.AnyAPIKeyExists(); !ok {
 		log.Fatalf("No API key exists. Please provide an API key when starting the service by using the parameters --api-key and --comment.")
 	}
 
-	fileService := store.NewFileService(cfg.UploadPath, db)
-
+	/******************************
+	 * start service
+	 ******************************/
 	if err := startServer(cfg, apiKeyService, fileService); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}

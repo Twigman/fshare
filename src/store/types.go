@@ -8,13 +8,14 @@ type Resource struct {
 	IsPrivate         bool
 	IsFile            bool
 	ParentUUID        *string
-	OwnerHashedKey    string
+	APIKeyUUID        string
 	AutoDeleteInHours int
 	CreatedAt         time.Time
 	DeletedAt         *time.Time
 }
 
 type APIKey struct {
+	UUID      string
 	HashedKey string
 	Comment   string
 	CreatedAt time.Time

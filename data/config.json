@@ -3,5 +3,6 @@
     "upload_path": "../data/uploads",
     "max_file_size_in_mb": 10,
     "sqlite_db_path": "../data/fshare.sqlite",
-    "continuous_file_validation": true
+    "continuous_file_validation": true,
+    "max_folder_depth": 3
 }

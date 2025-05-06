@@ -13,6 +13,7 @@ type Config struct {
 	MaxFileSizeInMB          int64  `json:"max_file_size_in_mb"` // 0 = no limit
 	SQLitePath               string `json:"sqlite_db_path"`
 	ContinuousFileValidation bool   `json:"continuous_file_validation"`
+	MaxFolderDepth           int    `json:"max_folder_depth"`
 }
 
 // LoadConfig loads the configuration from a given path.

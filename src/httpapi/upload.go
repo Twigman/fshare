@@ -26,7 +26,13 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// validate API key
 	apiKey := strings.TrimPrefix(authHeader, prefix)
+	key_uuid, err := s.apiKeyService.GetUUIDForAPIKey(apiKey)
+	if err != nil {
+		http.Error(w, "Authorization failed", http.StatusUnauthorized)
+		return
+	}
 
 	// upload limit
 	if s.config.IsUploadLimited() {
@@ -65,7 +71,7 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	res := &store.Resource{
 		Name:              header.Filename,
 		IsPrivate:         isPrivate,
-		OwnerHashedKey:    store.HashAPIKey(apiKey),
+		APIKeyUUID:        key_uuid,
 		AutoDeleteInHours: i,
 	}
 
