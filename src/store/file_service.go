@@ -46,7 +46,7 @@ func (f *FileService) SaveUploadedFile(file multipart.File, r *Resource) (string
 	r.Name = safeName
 	r.CreatedAt = time.Now().UTC()
 
-	err = f.db.saveResource(r)
+	err = f.db.insertResource(r)
 	if err != nil {
 		return "", err
 	}

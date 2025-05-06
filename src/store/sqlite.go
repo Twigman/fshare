@@ -55,7 +55,7 @@ func (s *SQLite) init() error {
 	return err
 }
 
-func (s *SQLite) saveResource(r *Resource) error {
+func (s *SQLite) insertResource(r *Resource) error {
 	_, err := s.db.Exec(`
 		INSERT INTO resource (
 			uuid, name, is_private, is_file, parent_uuid, owner_hashed_key, created_at, autodelete_in_hours
