@@ -5,14 +5,14 @@ Behavior:<br />
 - Each registered API key (user) receives its own folder.<br />
 - Duplicate files will be overwritten.<br />
 - No folders allowed at this point.<br />
-<br /> 
-Preparation:<br />
+
+## Preparation
+
 Before you start the service for the first time, make sure...:<br />
 ... the configured upload folder exists<br />
 ... neither the database file exists nor the home folder (name = uuid) is present in the upload folder
-<br />
 
-## Usage
+## Getting Started
 1. Checkout the project and navigate in /fshare<br />
 2. Create /data/uploads:
 
