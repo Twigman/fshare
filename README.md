@@ -19,3 +19,8 @@ First start (pass config + initial API key with comment):
 go run . --config "../data/config.json" --api-key 123 --comment 123
 ```
 
+Following starts
+
+```
+go run . --config "../data/config.json"
+```
