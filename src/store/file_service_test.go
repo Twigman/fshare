@@ -56,13 +56,19 @@ func TestFileService_SaveUploadedFile(t *testing.T) {
 		AutoDeleteInHours: 0,
 	}
 
+	// create dir
+	err = os.Mkdir(filepath.Join(uploadDir, key.UUID), 0o700)
+	if err != nil {
+		t.Fatalf("Error creating home dir: %v", err)
+	}
+
 	// tested function
 	_, err = fs.SaveUploadedFile(file, res)
 	if err != nil {
 		t.Fatalf("Error saving file: %v", err)
 	}
 
-	savedPath := filepath.Join(uploadDir, testFilename)
+	savedPath := filepath.Join(uploadDir, key.UUID, testFilename)
 	data, err := os.ReadFile(savedPath)
 	if err != nil {
 		t.Fatalf("File was not saved: %v", err)

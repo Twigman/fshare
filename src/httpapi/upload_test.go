@@ -24,11 +24,6 @@ func initServices(cfg *config.Config) (*store.APIKeyService, *store.FileService,
 	fileService := store.NewFileService(cfg, db)
 	apiKeyService := store.NewAPIKeyService(db)
 
-	_, err = apiKeyService.AddAPIKey("123", "123")
-	if err != nil {
-		return nil, nil, err
-	}
-
 	return apiKeyService, fileService, nil
 }
 
@@ -45,6 +40,16 @@ func TestUploadHandler_Success(t *testing.T) {
 	apiKeyService, fileService, err := initServices(cfg)
 	if err != nil {
 		t.Fatalf("Can not initialize test services: %v", err)
+	}
+
+	key, err := apiKeyService.AddAPIKey("123", "123")
+	if err != nil {
+		t.Fatalf("Error adding api key: %v", err)
+	}
+
+	// create home dir
+	if err := os.MkdirAll(filepath.Join(uploadDir, key.UUID), 0o700); err != nil {
+		t.Fatalf("Error creating home dir: %v", err)
 	}
 
 	restService := NewRESTService(cfg, apiKeyService, fileService)
@@ -91,7 +96,7 @@ func TestUploadHandler_Success(t *testing.T) {
 		t.Errorf("Expected status %d, got %d", http.StatusCreated, resp.StatusCode)
 	}
 
-	savedPath := filepath.Join(uploadDir, testFilename)
+	savedPath := filepath.Join(uploadDir, key.UUID, testFilename)
 	content, err := os.ReadFile(savedPath)
 	if err != nil {
 		t.Fatalf("File not saved: %v", err)

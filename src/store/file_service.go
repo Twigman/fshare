@@ -23,7 +23,7 @@ func NewFileService(cfg *config.Config, db *SQLite) *FileService {
 
 func (f *FileService) SaveUploadedFile(file multipart.File, r *Resource) (string, error) {
 	safeName := filepath.Base(r.Name)
-	dstPath := filepath.Join(f.cfg.UploadPath, safeName)
+	dstPath := filepath.Join(f.cfg.UploadPath, r.APIKeyUUID, safeName)
 
 	file_uuid, err := uuid.NewV7()
 	if err != nil {
