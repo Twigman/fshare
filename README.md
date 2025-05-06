@@ -13,7 +13,7 @@ Before you start the service for the first time, make sure...:<br />
 <br />
 
 ## Usage
-First start (pass config + init API key with comment):
+First start (pass config + initial API key with comment):
 
 ```
 go run . --config "../data/config.json" --api-key 123 --comment 123
