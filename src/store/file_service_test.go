@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/twigman/fshare/src/config"
 	"github.com/twigman/fshare/src/testutil/fake"
@@ -70,5 +71,66 @@ func TestFileService_SaveUploadedFile(t *testing.T) {
 
 	if !bytes.Equal(data, content) {
 		t.Errorf("Wrong file content.\nGot:  %q\nWant: %q", data, content)
+	}
+}
+
+func TestFileService_GetOrCreateHomeDir(t *testing.T) {
+	uploadDir := t.TempDir()
+
+	// Setup: Config & DB
+	cfg := &config.Config{
+		UploadPath: uploadDir,
+	}
+	db, err := NewDB(filepath.Join(uploadDir, "test.sqlite"))
+	if err != nil {
+		t.Fatalf("DB init error: %v", err)
+	}
+
+	fs := NewFileService(cfg, db)
+
+	// prepare api key
+	apiKey := "test-api-key"
+	hashed := HashAPIKey(apiKey)
+
+	apiKeyUUID := "00000000-0000-0000-0000-000000000001"
+	err = db.insertAPIKey(&APIKey{
+		UUID:      apiKeyUUID,
+		HashedKey: hashed,
+		Comment:   "Test Key",
+		CreatedAt: time.Now().UTC(),
+	})
+	if err != nil {
+		t.Fatalf("insertAPIKey failed: %v", err)
+	}
+
+	// create home dir
+	resource, err := fs.GetOrCreateHomeDir(hashed)
+	if err != nil {
+		t.Fatalf("GetOrCreateHomeDir error: %v", err)
+	}
+
+	// check resource
+	if resource.Name != apiKeyUUID {
+		t.Errorf("unexpected resource name: got %s, want %s", resource.Name, apiKeyUUID)
+	}
+	if !resource.IsPrivate || resource.IsFile || resource.ParentUUID != nil {
+		t.Errorf("resource flags invalid: %+v", resource)
+	}
+
+	// check folder
+	expectedPath := filepath.Join(uploadDir, apiKeyUUID)
+	if stat, err := os.Stat(expectedPath); err != nil {
+		t.Errorf("home directory not created: %v", err)
+	} else if !stat.IsDir() {
+		t.Errorf("expected directory, got file: %s", expectedPath)
+	}
+
+	// check idempotence
+	r2, err := fs.GetOrCreateHomeDir(hashed)
+	if err != nil {
+		t.Fatalf("second GetOrCreateHomeDir call failed: %v", err)
+	}
+	if r2.UUID != resource.UUID {
+		t.Errorf("expected same resource UUID, got %s vs %s", r2.UUID, resource.UUID)
 	}
 }
