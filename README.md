@@ -1,6 +1,14 @@
 # fshare
 Restful service to share files.<br />
-<br /> 
+
+## Description
+
+This tool provides simple REST endpoints to share files via links.  A separate "home" directory is created in the configured upload folder for each registered API key. These Uploads are automaticlly placed in the corresponding <br />
+
+Available Parameters:
+
+
+
 Behavior:<br />
 - Each registered API key (user) receives its own folder.<br />
 - Duplicate files will be overwritten.<br />
@@ -8,7 +16,7 @@ Behavior:<br />
 
 ## Preparation
 
-Before you start the service for the first time, make sure...:<br />
+Before you start the service for the first time, make sure...<br />
 ... the configured upload folder exists<br />
 ... neither the database file exists nor the home folder (name = uuid) is present in the upload folder
 
