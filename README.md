@@ -17,19 +17,19 @@ Before you start the service for the first time, make sure...:<br />
 2. Create /data/uploads:
 
 ```
-mkdir data/uploads
+mkdir ./data/uploads
 ```
 
 3. For the first start pass config + initial API key (and comment):
 
 ```
-go run ./src --config "../data/config.json" --api-key 123 --comment 123
+go run ./src --config "./data/config.json" --api-key 123 --comment 123
 ```
 
 3.1. Following starts:
 
 ```
-go run ./src --config "../data/config.json"
+go run ./src --config "./data/config.json"
 ```
 
 4. Upload a file:
