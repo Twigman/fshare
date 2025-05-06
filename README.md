@@ -1,5 +1,5 @@
 # fshare
-Restful service for uploading files and sharing them with others.
+Restful service to share files.
 <br /> 
 Behavior:<br />
 - Each registered API key (user) receives its own folder.<br />
