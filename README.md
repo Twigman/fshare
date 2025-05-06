@@ -38,6 +38,6 @@ go run ./src --config "./data/config.json"
 curl -X POST http://localhost:8080/upload \
      -H "Authorization: Bearer 123" \
      -F "file=@./data/config.json" \
-     -F "is_private=true" \
+     -F "is_private=false" \
      -F "auto_del_in_h=24"
 ```
