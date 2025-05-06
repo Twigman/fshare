@@ -11,6 +11,7 @@ Before you start the service for the first time, make sure...:<br />
 ... the configured upload folder exists<br />
 ... neither the database file exists nor the home folder (name = uuid) is present in the upload folder
 <br />
+
 ## Usage
 First start (pass config + init API key with comment):
 
