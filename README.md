@@ -13,26 +13,31 @@ Before you start the service for the first time, make sure...:<br />
 <br />
 
 ## Usage
-Navigate in /fshare/src.<br />
-<br />
-First start (pass config + initial API key with comment):
+1. Checkout the project and navigate in /fshare<br />
+2. Create /data/uploads:
 
 ```
-go run . --config "../data/config.json" --api-key 123 --comment 123
+mkdir data/uploads
 ```
 
-Following starts:
+3. For the first start pass config + initial API key (and comment):
 
 ```
-go run . --config "../data/config.json"
+go run ./src --config "../data/config.json" --api-key 123 --comment 123
 ```
 
-Upload a file:
+3.1. Following starts:
+
+```
+go run ./src --config "../data/config.json"
+```
+
+4. Upload a file:
 
 ```
 curl -X POST http://localhost:8080/upload \
      -H "Authorization: Bearer 123" \
-     -F "file=@../data/config.json" \
+     -F "file=@./data/config.json" \
      -F "is_private=true" \
      -F "auto_del_in_h=24"
 ```
