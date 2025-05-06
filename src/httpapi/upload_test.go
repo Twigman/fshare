@@ -11,23 +11,54 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/twigman/fshare/config"
+	"github.com/twigman/fshare/src/config"
+	"github.com/twigman/fshare/src/store"
 )
+
+func initServices(cfg *config.Config) (*store.APIKeyService, *store.FileService, error) {
+	db, err := store.NewDB(cfg.SQLitePath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	fileService := store.NewFileService(cfg, db)
+	apiKeyService := store.NewAPIKeyService(db)
+
+	return apiKeyService, fileService, nil
+}
 
 func TestUploadHandler_Success(t *testing.T) {
 	uploadDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:      uploadDir,
-		MaxFileSizeInMB: 5,
-		Port:            8080,
+		UploadPath:               uploadDir,
+		MaxFileSizeInMB:          5,
+		Port:                     8080,
+		SQLitePath:               filepath.Join(uploadDir, "test_db.sqlite"),
+		ContinuousFileValidation: false,
 	}
-	handler := NewHTTPHandler(cfg)
 
-	ts := httptest.NewServer(http.HandlerFunc(handler.UploadHandler))
+	apiKeyService, fileService, err := initServices(cfg)
+	if err != nil {
+		t.Fatalf("Can not initialize test services: %v", err)
+	}
+
+	key, err := apiKeyService.AddAPIKey("123", "123")
+	if err != nil {
+		t.Fatalf("Error adding api key: %v", err)
+	}
+
+	// create home dir
+	if err := os.MkdirAll(filepath.Join(uploadDir, key.UUID), 0o700); err != nil {
+		t.Fatalf("Error creating home dir: %v", err)
+	}
+
+	restService := NewRESTService(cfg, apiKeyService, fileService)
+
+	ts := httptest.NewServer(http.HandlerFunc(restService.UploadHandler))
 	defer ts.Close()
 
-	testFilename := "test.txt"
-	testContent := "Hello World\nTest!123%"
+	const testFilename = "test.txt"
+	const testContent = "Hello World\nTest!123%"
 
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
@@ -41,6 +72,9 @@ func TestUploadHandler_Success(t *testing.T) {
 		t.Fatalf("Copy failed: %v", err)
 	}
 
+	writer.WriteField("auto_del_in_h", "0")
+	writer.WriteField("is_private", "true")
+
 	if err := writer.Close(); err != nil {
 		t.Fatalf("Writer close failed: %v", err)
 	}
@@ -50,6 +84,7 @@ func TestUploadHandler_Success(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer 123")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -61,7 +96,7 @@ func TestUploadHandler_Success(t *testing.T) {
 		t.Errorf("Expected status %d, got %d", http.StatusCreated, resp.StatusCode)
 	}
 
-	savedPath := filepath.Join(uploadDir, testFilename)
+	savedPath := filepath.Join(uploadDir, key.UUID, testFilename)
 	content, err := os.ReadFile(savedPath)
 	if err != nil {
 		t.Fatalf("File not saved: %v", err)
@@ -74,12 +109,18 @@ func TestUploadHandler_Success(t *testing.T) {
 
 func TestUploadHandler_WrongMethod(t *testing.T) {
 	cfg := &config.Config{UploadPath: "./doesnotmatter/"}
-	handler := NewHTTPHandler(cfg)
+
+	apiKeyService, fileService, err := initServices(cfg)
+	if err != nil {
+		t.Fatalf("Can not initialize test services: %v", err)
+	}
+
+	restService := NewRESTService(cfg, apiKeyService, fileService)
 
 	req := httptest.NewRequest("GET", "/upload", nil)
 	w := httptest.NewRecorder()
 
-	handler.UploadHandler(w, req)
+	restService.UploadHandler(w, req)
 
 	resp := w.Result()
 	if resp.StatusCode != http.StatusMethodNotAllowed {
@@ -94,8 +135,14 @@ func TestUploadHandler_TooLarge(t *testing.T) {
 		MaxFileSizeInMB: 1,
 		Port:            8080,
 	}
-	handler := NewHTTPHandler(cfg)
-	ts := httptest.NewServer(http.HandlerFunc(handler.UploadHandler))
+
+	apiKeyService, fileService, err := initServices(cfg)
+	if err != nil {
+		t.Fatalf("Can not initialize test services: %v", err)
+	}
+
+	restService := NewRESTService(cfg, apiKeyService, fileService)
+	ts := httptest.NewServer(http.HandlerFunc(restService.UploadHandler))
 	defer ts.Close()
 
 	// create 2 MiB content
@@ -120,6 +167,7 @@ func TestUploadHandler_TooLarge(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer 123")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -138,8 +186,14 @@ func TestUploadHandler_MissingFileField(t *testing.T) {
 		UploadPath:      uploadDir,
 		MaxFileSizeInMB: 5,
 	}
-	handler := NewHTTPHandler(cfg)
-	ts := httptest.NewServer(http.HandlerFunc(handler.UploadHandler))
+	apiKeyService, fileService, err := initServices(cfg)
+	if err != nil {
+		t.Fatalf("Can not initialize test services: %v", err)
+	}
+
+	restService := NewRESTService(cfg, apiKeyService, fileService)
+
+	ts := httptest.NewServer(http.HandlerFunc(restService.UploadHandler))
 	defer ts.Close()
 
 	// create multipart without "file"-Field
@@ -153,6 +207,7 @@ func TestUploadHandler_MissingFileField(t *testing.T) {
 		t.Fatal(err)
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
+	req.Header.Set("Authorization", "Bearer 123")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -162,5 +217,25 @@ func TestUploadHandler_MissingFileField(t *testing.T) {
 
 	if resp.StatusCode != http.StatusBadRequest {
 		t.Errorf("Expected status %d, got %d", http.StatusBadRequest, resp.StatusCode)
+	}
+}
+
+func TestUploadHandler_MissingAuthHeader(t *testing.T) {
+	cfg := &config.Config{UploadPath: t.TempDir()}
+
+	apiKeyService, fileService, err := initServices(cfg)
+	if err != nil {
+		t.Fatalf("Setup failed: %v", err)
+	}
+	restService := NewRESTService(cfg, apiKeyService, fileService)
+
+	req := httptest.NewRequest(http.MethodPost, "/upload", nil)
+	w := httptest.NewRecorder()
+
+	restService.UploadHandler(w, req)
+
+	resp := w.Result()
+	if resp.StatusCode != http.StatusUnauthorized {
+		t.Errorf("Expected 401 Unauthorized, got %d", resp.StatusCode)
 	}
 }
