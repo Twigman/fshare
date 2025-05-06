@@ -26,6 +26,7 @@ func NewDB(path string) (*SQLite, error) {
 	return s, nil
 }
 
+// init initializes the database and explicitly allows foreign keys
 func (s *SQLite) init() error {
 	_, err := s.db.Exec(`PRAGMA foreign_keys = ON`)
 	if err != nil {
@@ -46,26 +47,61 @@ func (s *SQLite) init() error {
 		is_file BOOLEAN,
 		parent_uuid TEXT,
 		owner_hashed_key TEXT,
-		created_at DATETIME,
 		autodelete_in_hours INTEGER,
+		created_at DATETIME,
+		deleted_at DATETIME,
 		FOREIGN KEY (owner_hashed_key) REFERENCES api_key(hashed_key) ON DELETE CASCADE,
 		FOREIGN KEY (parent_uuid) REFERENCES resource(uuid) ON DELETE SET NULL
 	);
 	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.db.Exec(`
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_active_resource
+		ON resource(name, parent_uuid, owner_hashed_key)
+		WHERE deleted_at IS NULL;
+	`)
 	return err
 }
 
+// insertResource saves a resource
 func (s *SQLite) insertResource(r *Resource) error {
 	_, err := s.db.Exec(`
 		INSERT INTO resource (
-			uuid, name, is_private, is_file, parent_uuid, owner_hashed_key, created_at, autodelete_in_hours
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`, r.UUID, r.Name, r.IsPrivate, r.IsFile, r.ParentUUID, r.OwnerHashedKey, r.CreatedAt, r.AutoDeleteInHours)
+			uuid, name, is_private, is_file, parent_uuid, owner_hashed_key, autodelete_in_hours, created_at, deleted_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, r.UUID, r.Name, r.IsPrivate, r.IsFile, r.ParentUUID, r.OwnerHashedKey, r.AutoDeleteInHours, r.CreatedAt, r.DeletedAt)
 
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (s *SQLite) findResourceByUUID(uuid string) (*Resource, error) {
+	row := s.db.QueryRow(`SELECT uuid, name, is_private, is_file, parent_uuid, owner_hashed_key, autodelete_in_hours, created_at, deleted_at FROM resource WHERE uuid = ?`, uuid)
+	var r Resource
+	if err := row.Scan(&r.UUID, &r.Name, &r.IsPrivate, &r.IsFile, &r.ParentUUID, &r.OwnerHashedKey, &r.AutoDeleteInHours, &r.CreatedAt, &r.DeletedAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &r, nil
+}
+
+func (s *SQLite) findActiveResourceByNameAndOwner(name string, ownerHash string) (*Resource, error) {
+	row := s.db.QueryRow(`SELECT uuid, name, is_private, is_file, parent_uuid, owner_hashed_key, autodelete_in_hours, created_at, deleted_at FROM resource WHERE name = ? AND owner_hashed_key = ? AND deleted_at IS NULL`, name, ownerHash)
+	var r Resource
+	if err := row.Scan(&r.UUID, &r.Name, &r.IsPrivate, &r.IsFile, &r.ParentUUID, &r.OwnerHashedKey, &r.AutoDeleteInHours, &r.CreatedAt, &r.DeletedAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &r, nil
 }
 
 // insertAPIKey saves a hashed API key, a comment and the timestamp
@@ -82,6 +118,7 @@ func (s *SQLite) insertAPIKey(key *APIKey) error {
 	return nil
 }
 
+// countApiKeyEntries counts the entries in table api_key
 func (s *SQLite) countApiKeyEntries() (int, error) {
 	row := s.db.QueryRow(`SELECT COUNT(*) FROM api_key`)
 	var count int
@@ -91,6 +128,7 @@ func (s *SQLite) countApiKeyEntries() (int, error) {
 	return count, nil
 }
 
+// findAPIKeyByHash finds and returns the api_key entry containing the hashed key
 func (s *SQLite) findAPIKeyByHash(hash string) (*APIKey, error) {
 	row := s.db.QueryRow(`SELECT hashed_key, owner, created_at FROM api_key WHERE hashed_key = ?`, hash)
 	var k APIKey

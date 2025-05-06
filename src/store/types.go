@@ -9,8 +9,9 @@ type Resource struct {
 	IsFile            bool
 	ParentUUID        *string
 	OwnerHashedKey    string
-	CreatedAt         time.Time
 	AutoDeleteInHours int
+	CreatedAt         time.Time
+	DeletedAt         *time.Time
 }
 
 type APIKey struct {
