@@ -28,15 +28,13 @@ Before you start the service for the first time, make sure...<br />
 mkdir ./data/uploads
 ```
 
-3. For the first start pass config + initial API key (and comment):
+3. Start fshare:
 
 ```
+# first start with initial API key
 go run ./src --config "./data/config.json" --api-key 123 --comment 123
-```
 
-3.1. Following starts:
-
-```
+# following starts
 go run ./src --config "./data/config.json"
 ```
 
@@ -48,4 +46,16 @@ curl -X POST http://localhost:8080/upload \
      -F "file=@./data/config.json" \
      -F "is_private=false" \
      -F "auto_del_in_h=24"
+
+# response
+# {"uuid":"0196af20-4ca0-7e02-9441-dfd94cd75b39"}
+```
+
+5. Share the link: {url}/v/0196af20-4ca0-7e02-9441-dfd94cd75b39<br />
+<br />
+5. Delete a file:
+
+```
+curl -X POST http://localhost:8080/delete/0196af20-4ca0-7e02-9441-dfd94cd75b39 \
+     -H "Authorization: Bearer 123"
 ```
