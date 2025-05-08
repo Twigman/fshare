@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -23,37 +24,59 @@ func NewResourceService(cfg *config.Config, db *SQLite) *ResourceService {
 
 func (f *ResourceService) SaveUploadedFile(file multipart.File, r *Resource) (string, error) {
 	safeName := filepath.Base(r.Name)
+	if strings.HasPrefix(safeName, ".") {
+		return "", fmt.Errorf("filename not allowed")
+	}
+
 	dstPath := filepath.Join(f.cfg.UploadPath, r.APIKeyUUID, safeName)
 
-	file_uuid, err := uuid.NewV7()
+	fileUUID, err := uuid.NewV7()
 	if err != nil {
 		return "", fmt.Errorf("UUID generation error: %v", err)
 	}
 
-	dst, err := os.Create(dstPath)
+	absBase, err := filepath.Abs(f.cfg.UploadPath)
 	if err != nil {
-		return "", err
-	}
-	defer dst.Close()
-
-	_, err = io.Copy(dst, file)
-	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not resolve base upload path")
 	}
 
-	r.UUID = file_uuid.String()
+	absDst, err := filepath.Abs(dstPath)
+	if err != nil || !strings.HasPrefix(absDst, absBase) {
+		return "", fmt.Errorf("invalid file path")
+	}
+
+	tmpDir := filepath.Dir(absDst)
+	tmpFile, err := os.CreateTemp(tmpDir, "upload-*")
+	if err != nil {
+		return "", fmt.Errorf("temp file creation error: %v", err)
+	}
+	defer os.Remove(tmpFile.Name())
+	defer tmpFile.Close()
+
+	if _, err = io.Copy(tmpFile, file); err != nil {
+		return "", fmt.Errorf("file copy error: %v", err)
+	}
+
+	if err := tmpFile.Close(); err != nil {
+		return "", fmt.Errorf("file close error: %v", err)
+	}
+
+	if err := os.Rename(tmpFile.Name(), absDst); err != nil {
+		return "", fmt.Errorf("rename error: %v", err)
+	}
+
+	r.UUID = fileUUID.String()
 	r.IsFile = true
 	r.ParentUUID = nil
 	r.Name = safeName
 	r.CreatedAt = time.Now().UTC()
 	r.DeletedAt = nil
 
-	err = f.db.insertResource(r)
-	if err != nil {
+	if err := f.db.insertResource(r); err != nil {
 		return "", err
 	}
 
-	return file_uuid.String(), nil
+	return fileUUID.String(), nil
 }
 
 func (f *ResourceService) GetOrCreateHomeDir(hashed_key string) (*Resource, error) {

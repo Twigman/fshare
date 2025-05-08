@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -60,6 +61,7 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	file_uuid, err := s.resourceService.SaveUploadedFile(file, res)
 	if err != nil {
+		fmt.Printf("Error saving file: %v", err)
 		http.Error(w, "Could not save file", http.StatusInternalServerError)
 		return
 	}
