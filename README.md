@@ -17,7 +17,6 @@ A lightweight RESTful service to upload, share, view and delete files via UUID-b
 ## Behavior
 
 - Each API key maps to one user-specific home directory.
-- Files with the same name **will be overwritten**.
 - Only file uploads are currently supported – folders are not yet handled.
 
 ---
