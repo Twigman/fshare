@@ -111,3 +111,14 @@ func (f *FileService) GetOrCreateHomeDir(hashed_key string) (*Resource, error) {
 	}
 	return r, nil
 }
+
+func (f *FileService) GetResourceByUUID(uuid string) (*Resource, error) {
+	r, err := f.db.findResourceByUUID(uuid)
+	if err != nil {
+		return nil, err
+	}
+	if r == nil {
+		return nil, fmt.Errorf("resource not found")
+	}
+	return r, nil
+}

@@ -87,6 +87,7 @@ func startServer(cfg *config.Config, apiKeyService *store.APIKeyService, fileSer
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/upload", restService.UploadHandler)
+	mux.HandleFunc("/v/", restService.ViewHandler)
 
 	return http.ListenAndServe(addr, mux)
 }
