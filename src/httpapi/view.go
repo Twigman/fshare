@@ -1,6 +1,8 @@
 package httpapi
 
 import (
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"html"
 	"mime"
@@ -49,23 +51,57 @@ func (s *RESTService) ViewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	nonce := generateNonce()
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Security-Policy", fmt.Sprintf(
+		"default-src 'self'; script-src https://cdnjs.cloudflare.com 'nonce-%s'; style-src https://cdnjs.cloudflare.com 'nonce-%s';",
+		nonce, nonce,
+	))
+
 	fmt.Fprintf(w, `
 		<!DOCTYPE html>
-		<html>
-			<head>
-				<meta charset="utf-8">
-				<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-				<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-				<script>hljs.highlightAll();</script>
-			</head>
-			<body style="background-color:#0d1117; color:#c9d1d9">
-				<pre>
-					<code class="%s">%s</code>
-				</pre>
-			</body>
-		</html>`,
-		getLangClass(fileExt), html.EscapeString(string(content)))
+		<html lang="en">
+		<head>
+		<meta charset="utf-8">
+		<title>Viewer</title>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+		<style nonce="%s">
+			body {
+			margin: 0;
+			background-color: #0d1117;
+			color: #c9d1d9;
+			font-family: monospace;
+			}
+
+			pre {
+			margin: 0;
+			padding: 1em;
+			background: #0d1117;
+			box-shadow: none;
+			border: none;
+			overflow-x: auto;
+			}
+
+			code {
+			background: none;
+			color: inherit;
+			}
+		</style>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
+		<script nonce="%s">
+			window.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('pre code').forEach(function (el) {
+				hljs.highlightElement(el);
+			});
+			});
+		</script>
+		</head>
+		<body>
+		<pre><code class="language-%s">%s</code></pre>
+		</body>
+		</html>
+		`, nonce, nonce, getLangClass(fileExt), html.EscapeString(string(content)))
 }
 
 func getLangClass(ext string) string {
@@ -108,4 +144,13 @@ func getLangClass(ext string) string {
 	}
 
 	return langClass
+}
+
+func generateNonce() string {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "staticfallback"
+	}
+	return base64.StdEncoding.EncodeToString(b)
 }
