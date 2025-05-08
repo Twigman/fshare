@@ -12,16 +12,16 @@ import (
 	"github.com/twigman/fshare/src/config"
 )
 
-type FileService struct {
+type ResourceService struct {
 	db  *SQLite
 	cfg *config.Config
 }
 
-func NewFileService(cfg *config.Config, db *SQLite) *FileService {
-	return &FileService{cfg: cfg, db: db}
+func NewResourceService(cfg *config.Config, db *SQLite) *ResourceService {
+	return &ResourceService{cfg: cfg, db: db}
 }
 
-func (f *FileService) SaveUploadedFile(file multipart.File, r *Resource) (string, error) {
+func (f *ResourceService) SaveUploadedFile(file multipart.File, r *Resource) (string, error) {
 	safeName := filepath.Base(r.Name)
 	dstPath := filepath.Join(f.cfg.UploadPath, r.APIKeyUUID, safeName)
 
@@ -56,7 +56,7 @@ func (f *FileService) SaveUploadedFile(file multipart.File, r *Resource) (string
 	return file_uuid.String(), nil
 }
 
-func (f *FileService) GetOrCreateHomeDir(hashed_key string) (*Resource, error) {
+func (f *ResourceService) GetOrCreateHomeDir(hashed_key string) (*Resource, error) {
 	key, err := f.db.findAPIKeyByHash(hashed_key)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (f *FileService) GetOrCreateHomeDir(hashed_key string) (*Resource, error) {
 	return r, nil
 }
 
-func (f *FileService) GetResourceByUUID(uuid string) (*Resource, error) {
+func (f *ResourceService) GetResourceByUUID(uuid string) (*Resource, error) {
 	r, err := f.db.findResourceByUUID(uuid)
 	if err != nil {
 		return nil, err
@@ -123,7 +123,7 @@ func (f *FileService) GetResourceByUUID(uuid string) (*Resource, error) {
 	return r, nil
 }
 
-func (f *FileService) DeleteResourceByUUID(rUUID string, keyUUID string) error {
+func (f *ResourceService) DeleteResourceByUUID(rUUID string, keyUUID string) error {
 	res, err := f.GetResourceByUUID(rUUID)
 	if err != nil || res == nil || !res.IsFile || res.DeletedAt != nil {
 		return err

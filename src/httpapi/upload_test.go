@@ -15,16 +15,16 @@ import (
 	"github.com/twigman/fshare/src/store"
 )
 
-func initServices(cfg *config.Config) (*store.APIKeyService, *store.FileService, error) {
+func initServices(cfg *config.Config) (*store.APIKeyService, *store.ResourceService, error) {
 	db, err := store.NewDB(cfg.SQLitePath)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	fileService := store.NewFileService(cfg, db)
-	apiKeyService := store.NewAPIKeyService(db)
+	rs := store.NewResourceService(cfg, db)
+	as := store.NewAPIKeyService(db)
 
-	return apiKeyService, fileService, nil
+	return as, rs, nil
 }
 
 func TestUploadHandler_Success(t *testing.T) {
@@ -37,12 +37,12 @@ func TestUploadHandler_Success(t *testing.T) {
 		ContinuousFileValidation: false,
 	}
 
-	apiKeyService, fileService, err := initServices(cfg)
+	as, rs, err := initServices(cfg)
 	if err != nil {
 		t.Fatalf("Can not initialize test services: %v", err)
 	}
 
-	key, err := apiKeyService.AddAPIKey("123", "123")
+	key, err := as.AddAPIKey("123", "123")
 	if err != nil {
 		t.Fatalf("Error adding api key: %v", err)
 	}
@@ -52,7 +52,7 @@ func TestUploadHandler_Success(t *testing.T) {
 		t.Fatalf("Error creating home dir: %v", err)
 	}
 
-	restService := NewRESTService(cfg, apiKeyService, fileService)
+	restService := NewRESTService(cfg, as, rs)
 
 	ts := httptest.NewServer(http.HandlerFunc(restService.UploadHandler))
 	defer ts.Close()
@@ -110,12 +110,12 @@ func TestUploadHandler_Success(t *testing.T) {
 func TestUploadHandler_WrongMethod(t *testing.T) {
 	cfg := &config.Config{UploadPath: "./doesnotmatter/"}
 
-	apiKeyService, fileService, err := initServices(cfg)
+	as, rs, err := initServices(cfg)
 	if err != nil {
 		t.Fatalf("Can not initialize test services: %v", err)
 	}
 
-	restService := NewRESTService(cfg, apiKeyService, fileService)
+	restService := NewRESTService(cfg, as, rs)
 
 	req := httptest.NewRequest("GET", "/upload", nil)
 	w := httptest.NewRecorder()
@@ -136,12 +136,12 @@ func TestUploadHandler_TooLarge(t *testing.T) {
 		Port:            8080,
 	}
 
-	apiKeyService, fileService, err := initServices(cfg)
+	as, rs, err := initServices(cfg)
 	if err != nil {
 		t.Fatalf("Can not initialize test services: %v", err)
 	}
 
-	restService := NewRESTService(cfg, apiKeyService, fileService)
+	restService := NewRESTService(cfg, as, rs)
 	ts := httptest.NewServer(http.HandlerFunc(restService.UploadHandler))
 	defer ts.Close()
 
@@ -186,12 +186,12 @@ func TestUploadHandler_MissingFileField(t *testing.T) {
 		UploadPath:      uploadDir,
 		MaxFileSizeInMB: 5,
 	}
-	apiKeyService, fileService, err := initServices(cfg)
+	as, rs, err := initServices(cfg)
 	if err != nil {
 		t.Fatalf("Can not initialize test services: %v", err)
 	}
 
-	restService := NewRESTService(cfg, apiKeyService, fileService)
+	restService := NewRESTService(cfg, as, rs)
 
 	ts := httptest.NewServer(http.HandlerFunc(restService.UploadHandler))
 	defer ts.Close()
@@ -223,11 +223,11 @@ func TestUploadHandler_MissingFileField(t *testing.T) {
 func TestUploadHandler_MissingAuthHeader(t *testing.T) {
 	cfg := &config.Config{UploadPath: t.TempDir()}
 
-	apiKeyService, fileService, err := initServices(cfg)
+	as, rs, err := initServices(cfg)
 	if err != nil {
 		t.Fatalf("Setup failed: %v", err)
 	}
-	restService := NewRESTService(cfg, apiKeyService, fileService)
+	restService := NewRESTService(cfg, as, rs)
 
 	req := httptest.NewRequest(http.MethodPost, "/upload", nil)
 	w := httptest.NewRecorder()

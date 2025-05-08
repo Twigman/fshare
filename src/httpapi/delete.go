@@ -12,7 +12,7 @@ func (s *RESTService) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rUUID := strings.TrimPrefix(r.URL.Path, "/delete/")
-	err = s.fileService.DeleteResourceByUUID(rUUID, keyUUID)
+	err = s.resourceService.DeleteResourceByUUID(rUUID, keyUUID)
 	if err != nil {
 		http.Error(w, "Delete failed", http.StatusInternalServerError)
 		return

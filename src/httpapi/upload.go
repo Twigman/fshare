@@ -58,7 +58,7 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		AutoDeleteInHours: i,
 	}
 
-	file_uuid, err := s.fileService.SaveUploadedFile(file, res)
+	file_uuid, err := s.resourceService.SaveUploadedFile(file, res)
 	if err != nil {
 		http.Error(w, "Could not save file", http.StatusInternalServerError)
 		return

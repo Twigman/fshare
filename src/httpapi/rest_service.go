@@ -10,16 +10,16 @@ import (
 )
 
 type RESTService struct {
-	config        *config.Config
-	apiKeyService *store.APIKeyService
-	fileService   *store.FileService
+	config          *config.Config
+	apiKeyService   *store.APIKeyService
+	resourceService *store.ResourceService
 }
 
-func NewRESTService(config *config.Config, apiKeyService *store.APIKeyService, fileService *store.FileService) *RESTService {
+func NewRESTService(config *config.Config, as *store.APIKeyService, rs *store.ResourceService) *RESTService {
 	return &RESTService{
-		config:        config,
-		apiKeyService: apiKeyService,
-		fileService:   fileService,
+		config:          config,
+		apiKeyService:   as,
+		resourceService: rs,
 	}
 }
 

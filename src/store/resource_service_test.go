@@ -11,21 +11,21 @@ import (
 	"github.com/twigman/fshare/src/testutil/fake"
 )
 
-func initServices(cfg *config.Config) (*FileService, *APIKey, error) {
+func initServices(cfg *config.Config) (*ResourceService, *APIKey, error) {
 	db, err := NewDB(cfg.SQLitePath)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	fileService := NewFileService(cfg, db)
-	apiKeyService := NewAPIKeyService(db)
+	rs := NewResourceService(cfg, db)
+	as := NewAPIKeyService(db)
 
-	key, err := apiKeyService.AddAPIKey("123", "123")
+	key, err := as.AddAPIKey("123", "123")
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return fileService, key, nil
+	return rs, key, nil
 }
 
 func TestFileService_SaveUploadedFile(t *testing.T) {
@@ -44,7 +44,7 @@ func TestFileService_SaveUploadedFile(t *testing.T) {
 	content := []byte("Hello World")
 	file := &fake.FakeMultipartFile{Reader: bytes.NewReader(content)}
 
-	fs, key, err := initServices(cfg)
+	rs, key, err := initServices(cfg)
 	if err != nil {
 		t.Fatalf("Error initializing test services: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestFileService_SaveUploadedFile(t *testing.T) {
 	}
 
 	// tested function
-	_, err = fs.SaveUploadedFile(file, res)
+	_, err = rs.SaveUploadedFile(file, res)
 	if err != nil {
 		t.Fatalf("Error saving file: %v", err)
 	}
@@ -91,7 +91,7 @@ func TestFileService_GetOrCreateHomeDir(t *testing.T) {
 		t.Fatalf("DB init error: %v", err)
 	}
 
-	fs := NewFileService(cfg, db)
+	rs := NewResourceService(cfg, db)
 
 	// prepare api key
 	apiKey := "test-api-key"
@@ -109,7 +109,7 @@ func TestFileService_GetOrCreateHomeDir(t *testing.T) {
 	}
 
 	// create home dir
-	resource, err := fs.GetOrCreateHomeDir(hashed)
+	resource, err := rs.GetOrCreateHomeDir(hashed)
 	if err != nil {
 		t.Fatalf("GetOrCreateHomeDir error: %v", err)
 	}
@@ -131,7 +131,7 @@ func TestFileService_GetOrCreateHomeDir(t *testing.T) {
 	}
 
 	// check idempotence
-	r2, err := fs.GetOrCreateHomeDir(hashed)
+	r2, err := rs.GetOrCreateHomeDir(hashed)
 	if err != nil {
 		t.Fatalf("second GetOrCreateHomeDir call failed: %v", err)
 	}

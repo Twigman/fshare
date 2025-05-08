@@ -13,7 +13,7 @@ import (
 func (s *RESTService) ViewHandler(w http.ResponseWriter, r *http.Request) {
 	file_uuid := strings.TrimPrefix(r.URL.Path, "/v/")
 
-	res, err := s.fileService.GetResourceByUUID(file_uuid)
+	res, err := s.resourceService.GetResourceByUUID(file_uuid)
 	if err != nil || res == nil || !res.IsFile || res.DeletedAt != nil {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
