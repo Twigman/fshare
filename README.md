@@ -51,9 +51,10 @@ curl -X POST http://localhost:8080/upload \
 # {"uuid":"0196af20-4ca0-7e02-9441-dfd94cd75b39"}
 ```
 
-5. Visit the upload: localhost:8080/v/0196af20-4ca0-7e02-9441-dfd94cd75b39<br />
+5. Share the link:<br />
+localhost:8080/v/0196af20-4ca0-7e02-9441-dfd94cd75b39<br />
 
-6. Delete a file:
+7. Delete a file:
 
 ```
 curl -X POST http://localhost:8080/delete/0196af20-4ca0-7e02-9441-dfd94cd75b39 \
