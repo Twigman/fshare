@@ -133,6 +133,22 @@ func (s *SQLite) findActiveResource(name string, apiKeyUUID string, parentDir *s
 	return &r, nil
 }
 
+func (s *SQLite) updateResource(r *Resource) error {
+	_, err := s.db.Exec(`
+		UPDATE resource
+		SET name = ?,
+		    is_private = ?,
+		    is_file = ?,
+		    parent_uuid = ?,
+		    api_key_uuid = ?,
+		    autodelete_in_hours = ?,
+		    created_at = ?,
+		    deleted_at = ?
+		WHERE uuid = ?
+	`, r.Name, r.IsPrivate, r.IsFile, r.ParentUUID, r.APIKeyUUID, r.AutoDeleteInHours, r.CreatedAt, r.DeletedAt, r.UUID)
+	return err
+}
+
 // insertAPIKey saves a hashed API key, a comment and the timestamp
 func (s *SQLite) insertAPIKey(key *APIKey) error {
 	_, err := s.db.Exec(`

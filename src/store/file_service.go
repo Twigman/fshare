@@ -111,3 +111,39 @@ func (f *FileService) GetOrCreateHomeDir(hashed_key string) (*Resource, error) {
 	}
 	return r, nil
 }
+
+func (f *FileService) GetResourceByUUID(uuid string) (*Resource, error) {
+	r, err := f.db.findResourceByUUID(uuid)
+	if err != nil {
+		return nil, err
+	}
+	return r, nil
+}
+
+func (f *FileService) DeleteResourceByUUID(rUUID string, keyUUID string) error {
+	res, err := f.GetResourceByUUID(rUUID)
+	if err != nil || res == nil || !res.IsFile || res.DeletedAt != nil {
+		return err
+	}
+
+	// needs to be owner
+	if res.APIKeyUUID != keyUUID {
+		return fmt.Errorf("authorization error")
+	}
+
+	resPath := filepath.Join(f.cfg.UploadPath, res.APIKeyUUID, res.Name)
+
+	// remove resource
+	if err := os.Remove(resPath); err != nil {
+		return err
+	}
+
+	t := time.Now().UTC()
+	res.DeletedAt = &t
+
+	err = f.db.updateResource(res)
+	if err != nil {
+		return err
+	}
+	return nil
+}
