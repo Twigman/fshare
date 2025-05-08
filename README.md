@@ -75,7 +75,7 @@ curl -X POST http://localhost:8080/upload \
 ### 📎 Share link:
 
 ```
-http://localhost:8080/view/0196af20-4ca0-7e02-9441-dfd94cd75b39
+http://localhost:8080/r/0196af20-4ca0-7e02-9441-dfd94cd75b39
 ```
 
 ### 🗑 Delete a file:
