@@ -13,7 +13,7 @@ import (
 )
 
 func (s *RESTService) ViewHandler(w http.ResponseWriter, r *http.Request) {
-	file_uuid := strings.TrimPrefix(r.URL.Path, "/v/")
+	file_uuid := strings.TrimPrefix(r.URL.Path, "/r/")
 
 	res, err := s.resourceService.GetResourceByUUID(file_uuid)
 	if err != nil || res == nil || !res.IsFile || res.DeletedAt != nil {
@@ -31,17 +31,17 @@ func (s *RESTService) ViewHandler(w http.ResponseWriter, r *http.Request) {
 	resPath := filepath.Join(s.config.UploadPath, res.APIKeyUUID, res.Name)
 	fileExt := filepath.Ext(res.Name)
 
+	absPath, err := filepath.Abs(resPath)
+	basePath, err2 := filepath.Abs(s.config.UploadPath)
+	if err != nil || err2 != nil || !strings.HasPrefix(absPath, basePath) {
+		http.Error(w, "Invalid path", http.StatusBadRequest)
+		return
+	}
+
 	// detect mime type
 	mimeType := mime.TypeByExtension(fileExt)
 	if mimeType == "" {
 		mimeType = "application/octet-stream"
-	}
-
-	// present images in browser
-	if strings.HasPrefix(mimeType, "image/") {
-		w.Header().Set("Content-Type", mimeType)
-		http.ServeFile(w, r, resPath)
-		return
 	}
 
 	// present source code in HTML with highlighting
@@ -51,15 +51,16 @@ func (s *RESTService) ViewHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nonce := generateNonce()
+	if isRenderableTextFile(fileExt) {
+		nonce := generateNonce()
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Content-Security-Policy", fmt.Sprintf(
-		"default-src 'self'; script-src https://cdnjs.cloudflare.com 'nonce-%s'; style-src https://cdnjs.cloudflare.com 'nonce-%s';",
-		nonce, nonce,
-	))
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Security-Policy", fmt.Sprintf(
+			"default-src 'none'; script-src https://cdnjs.cloudflare.com 'nonce-%s'; style-src https://cdnjs.cloudflare.com 'nonce-%s'; img-src 'self'; object-src 'none'; base-uri 'none';",
+			nonce, nonce,
+		))
 
-	fmt.Fprintf(w, `
+		fmt.Fprintf(w, `
 		<!DOCTYPE html>
 		<html lang="en">
 		<head>
@@ -102,48 +103,21 @@ func (s *RESTService) ViewHandler(w http.ResponseWriter, r *http.Request) {
 		</body>
 		</html>
 		`, nonce, nonce, getLangClass(fileExt), html.EscapeString(string(content)))
-}
-
-func getLangClass(ext string) string {
-	var highlightExtWhitelist = map[string]string{
-		"go":         "go",
-		"js":         "javascript",
-		"ts":         "typescript",
-		"json":       "json",
-		"html":       "html",
-		"css":        "css",
-		"scss":       "scss",
-		"py":         "python",
-		"sh":         "bash",
-		"bash":       "bash",
-		"c":          "c",
-		"cpp":        "cpp",
-		"h":          "cpp",
-		"cs":         "csharp",
-		"java":       "java",
-		"kt":         "kotlin",
-		"rb":         "ruby",
-		"php":        "php",
-		"sql":        "sql",
-		"xml":        "xml",
-		"yaml":       "yaml",
-		"yml":        "yaml",
-		"md":         "markdown",
-		"toml":       "toml",
-		"ini":        "ini",
-		"dockerfile": "dockerfile",
-		"makefile":   "makefile",
-		"txt":        "plaintext",
+	} else if isRenderableImageFile(fileExt) {
+		// present images in browser
+		if strings.HasPrefix(mimeType, "image/") {
+			w.Header().Set("Content-Type", mimeType)
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			http.ServeFile(w, r, resPath)
+			return
+		}
+	} else {
+		// force download
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", res.Name))
+		http.ServeFile(w, r, resPath)
+		return
 	}
-
-	ext = strings.TrimPrefix(ext, ".")
-	langClass, ok := highlightExtWhitelist[strings.ToLower(ext)]
-
-	if !ok {
-		langClass = "plaintext"
-	}
-
-	return langClass
 }
 
 func generateNonce() string {
