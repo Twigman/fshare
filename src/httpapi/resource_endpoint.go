@@ -21,7 +21,7 @@ func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
 	file_uuid := strings.TrimPrefix(r.URL.Path, "/r/")
 
 	res, err := s.resourceService.GetResourceByUUID(file_uuid)
-	if err != nil || res == nil || !res.IsFile || res.DeletedAt != nil {
+	if err != nil || res == nil || !res.IsFile || res.DeletedAt != nil || res.IsBroken {
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
