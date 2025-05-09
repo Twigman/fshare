@@ -37,10 +37,9 @@ func (s *RESTService) authorizeBearer(w http.ResponseWriter, r *http.Request) (s
 
 	apiKey := strings.TrimPrefix(authHeader, prefix)
 	keyUUID, err := s.apiKeyService.GetUUIDForAPIKey(apiKey)
-	if err != nil {
+	if err != nil || keyUUID == "" {
 		http.Error(w, "Authorization failed", http.StatusUnauthorized)
-		return "", err
+		return "", fmt.Errorf("invalid api key")
 	}
-
 	return keyUUID, nil
 }
