@@ -81,7 +81,7 @@ http://localhost:8080/r/0196af20-4ca0-7e02-9441-dfd94cd75b39
 ### 🗑 Delete a file:
 
 ```bash
-curl -X POST http://localhost:8080/delete/0196af20-4ca0-7e02-9441-dfd94cd75b39 \
+curl -X DELETE http://localhost:8080/delete/0196af20-4ca0-7e02-9441-dfd94cd75b39 \
      -H "Authorization: Bearer 123"
 ```
 
