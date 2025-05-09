@@ -12,7 +12,12 @@ import (
 	"strings"
 )
 
-func (s *RESTService) ViewHandler(w http.ResponseWriter, r *http.Request) {
+func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	file_uuid := strings.TrimPrefix(r.URL.Path, "/r/")
 
 	res, err := s.resourceService.GetResourceByUUID(file_uuid)
@@ -22,10 +27,15 @@ func (s *RESTService) ViewHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if res.IsPrivate {
-		// TODO check api key
+		keyUUID, err := s.authorizeBearer(w, r)
+		if err != nil {
+			return
+		}
 
-		http.Error(w, "Authorization failed", http.StatusUnauthorized)
-		return
+		if res.APIKeyUUID != keyUUID {
+			http.Error(w, "Authorization failed", http.StatusUnauthorized)
+			return
+		}
 	}
 
 	resPath := filepath.Join(s.config.UploadPath, res.APIKeyUUID, res.Name)
@@ -33,6 +43,7 @@ func (s *RESTService) ViewHandler(w http.ResponseWriter, r *http.Request) {
 
 	absPath, err := filepath.Abs(resPath)
 	basePath, err2 := filepath.Abs(s.config.UploadPath)
+
 	if err != nil || err2 != nil || !strings.HasPrefix(absPath, basePath) {
 		http.Error(w, "Invalid path", http.StatusBadRequest)
 		return
@@ -47,6 +58,8 @@ func (s *RESTService) ViewHandler(w http.ResponseWriter, r *http.Request) {
 	// present source code in HTML with highlighting
 	content, err := os.ReadFile(resPath)
 	if err != nil {
+		_ = s.resourceService.MarkResourceAsBroken(res.UUID)
+
 		http.Error(w, "Could not read file", http.StatusInternalServerError)
 		return
 	}

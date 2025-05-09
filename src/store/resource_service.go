@@ -11,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/twigman/fshare/src/config"
+	"github.com/twigman/fshare/src/internal/apperror"
 )
 
 type ResourceService struct {
@@ -23,11 +24,15 @@ func NewResourceService(cfg *config.Config, db *SQLite) *ResourceService {
 }
 
 func (f *ResourceService) SaveUploadedFile(file multipart.File, r *Resource) (string, error) {
-	safeName := filepath.Base(r.Name)
-	if strings.HasPrefix(safeName, ".") {
-		return "", fmt.Errorf("filename not allowed")
+	if strings.Contains(r.Name, "..") ||
+		strings.Contains(r.Name, "/") ||
+		strings.Contains(r.Name, "\\") ||
+		strings.HasPrefix(r.Name, ".") {
+		return "", apperror.ErrInvalidFilename
 	}
 
+	r.Name = strings.TrimSpace(r.Name)
+	safeName := filepath.Base(r.Name)
 	dstPath := filepath.Join(f.cfg.UploadPath, r.APIKeyUUID, safeName)
 
 	fileUUID, err := uuid.NewV7()
@@ -167,6 +172,20 @@ func (f *ResourceService) DeleteResourceByUUID(rUUID string, keyUUID string) err
 	t := time.Now().UTC()
 	res.DeletedAt = &t
 
+	err = f.db.updateResource(res)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (f *ResourceService) MarkResourceAsBroken(rUUID string) error {
+	res, err := f.GetResourceByUUID(rUUID)
+	if err != nil || res == nil || res.DeletedAt != nil {
+		return err
+	}
+
+	res.IsBroken = true
 	err = f.db.updateResource(res)
 	if err != nil {
 		return err

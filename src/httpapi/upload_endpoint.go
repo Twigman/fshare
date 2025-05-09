@@ -2,10 +2,10 @@ package httpapi
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/twigman/fshare/src/internal/apperror"
 	"github.com/twigman/fshare/src/store"
 )
 
@@ -60,8 +60,11 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	file_uuid, err := s.resourceService.SaveUploadedFile(file, res)
+	if err == apperror.ErrInvalidFilename {
+		http.Error(w, apperror.ErrInvalidFilename.Msg, http.StatusBadRequest)
+		return
+	}
 	if err != nil {
-		fmt.Printf("Error saving file: %v", err)
 		http.Error(w, "Could not save file", http.StatusInternalServerError)
 		return
 	}

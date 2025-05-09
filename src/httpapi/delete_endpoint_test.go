@@ -1,64 +1,19 @@
 package httpapi_test
 
 import (
-	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/twigman/fshare/src/config"
-	"github.com/twigman/fshare/src/httpapi"
-	"github.com/twigman/fshare/src/store"
-	"github.com/twigman/fshare/src/testutil/fake"
 )
-
-func setupTest(uploadDir string, apiKey string) (*httpapi.RESTService, string, error) {
-	cfg := &config.Config{
-		UploadPath:      uploadDir,
-		MaxFileSizeInMB: 5,
-		Port:            8080,
-		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
-	}
-
-	as, rs, restService, err := initTestServices(cfg)
-	if err != nil {
-		return nil, "", err
-	}
-
-	key, err := as.AddAPIKey(apiKey, "test key")
-	if err != nil {
-		return nil, "", err
-	}
-
-	_, err = rs.GetOrCreateHomeDir(key.HashedKey)
-	if err != nil {
-		return nil, "", err
-	}
-
-	content := []byte("Hello World")
-	file := &fake.FakeMultipartFile{Reader: bytes.NewReader(content)}
-	const filename = "test.txt"
-
-	r := &store.Resource{
-		Name:              filename,
-		IsPrivate:         false,
-		APIKeyUUID:        key.UUID,
-		AutoDeleteInHours: 0,
-	}
-
-	fileUUID, err := rs.SaveUploadedFile(file, r)
-	if err != nil {
-		return nil, "", err
-	}
-
-	return restService, fileUUID, nil
-}
 
 func TestDeleteHandler_WithoutAuth(t *testing.T) {
 	uploadDir := t.TempDir()
 	const apiKey = "123"
-	restService, fileUUID, err := setupTest(uploadDir, apiKey)
+	const filename = "test.txt"
+	const isPrivate = true
+	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
 	if err != nil {
 		t.Errorf("Test setup error: %v", err)
 	}
@@ -76,7 +31,9 @@ func TestDeleteHandler_WithoutAuth(t *testing.T) {
 func TestDeleteHandler_Success(t *testing.T) {
 	uploadDir := t.TempDir()
 	const apiKey = "123"
-	restService, fileUUID, err := setupTest(uploadDir, apiKey)
+	const filename = "test.txt"
+	const isPrivate = true
+	restService, rs, key, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
 	if err != nil {
 		t.Errorf("Test setup error: %v", err)
 	}
@@ -91,12 +48,33 @@ func TestDeleteHandler_Success(t *testing.T) {
 	if rr.Code != http.StatusNoContent {
 		t.Errorf("expected %d, got %d", http.StatusNoContent, rr.Code)
 	}
+
+	// database check
+	r, err := rs.GetResourceByUUID(fileUUID)
+	if err != nil {
+		t.Errorf("Resource does not exist: %v", err)
+	}
+
+	if r.UUID != fileUUID {
+		t.Errorf("Wrong resource: %v", err)
+	}
+
+	if r.DeletedAt == nil {
+		t.Errorf("resource not marked as deleted: %v", err)
+	}
+	// check file
+	_, err = os.Stat(filepath.Join(uploadDir, key.HashedKey, filename))
+	if os.IsExist(err) {
+		t.Errorf("Testfile still exists: %v", err)
+	}
 }
 
 func TestDeleteHandler_WrongKey(t *testing.T) {
 	uploadDir := t.TempDir()
 	const apiKey = "123"
-	restService, fileUUID, err := setupTest(uploadDir, apiKey)
+	const filename = "test.txt"
+	const isPrivate = true
+	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
 	if err != nil {
 		t.Errorf("Test setup error: %v", err)
 	}
@@ -116,7 +94,9 @@ func TestDeleteHandler_WrongKey(t *testing.T) {
 func TestDeleteHandler_NoExistingUUID(t *testing.T) {
 	uploadDir := t.TempDir()
 	const apiKey = "123"
-	restService, fileUUID, err := setupTest(uploadDir, apiKey)
+	const filename = "test.txt"
+	const isPrivate = true
+	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
 	if err != nil {
 		t.Errorf("Test setup error: %v", err)
 	}
@@ -136,7 +116,9 @@ func TestDeleteHandler_NoExistingUUID(t *testing.T) {
 func TestDeleteHandler_WrongMethod(t *testing.T) {
 	uploadDir := t.TempDir()
 	const apiKey = "123"
-	restService, fileUUID, err := setupTest(uploadDir, apiKey)
+	const filename = "test.txt"
+	const isPrivate = true
+	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
 	if err != nil {
 		t.Errorf("Test setup error: %v", err)
 	}
