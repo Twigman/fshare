@@ -48,18 +48,18 @@ func main() {
 	/******************************
 	 * api key + home dir
 	 ******************************/
-	apiKeyService := store.NewAPIKeyService(db)
-	fileService := store.NewFileService(cfg, db)
+	as := store.NewAPIKeyService(db)
+	rs := store.NewResourceService(cfg, db)
 
 	// add api-key if provided
 	if *flagAPIKey != "" {
-		key, err := apiKeyService.AddAPIKey(*flagAPIKey, *flagComment)
+		key, err := as.AddAPIKey(*flagAPIKey, *flagComment)
 		if err != nil {
 			log.Fatalf("Error saving initial API key: %v", err)
 		}
 		log.Printf("Initial API key was added.")
 
-		r, err := fileService.GetOrCreateHomeDir(key.HashedKey)
+		r, err := rs.GetOrCreateHomeDir(key.HashedKey)
 		if err != nil {
 			log.Fatalf("Error creating home dir: %v", err)
 		}
@@ -67,26 +67,28 @@ func main() {
 		log.Printf("Created home dir: %s\n", filepath.Join(cfg.UploadPath, r.Name))
 	}
 
-	if ok, _ := apiKeyService.AnyAPIKeyExists(); !ok {
+	if ok, _ := as.AnyAPIKeyExists(); !ok {
 		log.Fatalf("No API key exists. Please provide an API key when starting the service by using the parameters --api-key and --comment.")
 	}
 
 	/******************************
 	 * start service
 	 ******************************/
-	if err := startServer(cfg, apiKeyService, fileService); err != nil {
+	if err := startServer(cfg, as, rs); err != nil {
 		log.Fatalf("Server error: %v", err)
 	}
 }
 
-func startServer(cfg *config.Config, apiKeyService *store.APIKeyService, fileService *store.FileService) error {
+func startServer(cfg *config.Config, as *store.APIKeyService, rs *store.ResourceService) error {
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	log.Printf("Starting server on %s ...\n", addr)
 
-	restService := httpapi.NewRESTService(cfg, apiKeyService, fileService)
+	restService := httpapi.NewRESTService(cfg, as, rs)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/upload", restService.UploadHandler)
+	mux.HandleFunc("/r/", restService.ResourceHandler)
+	mux.HandleFunc("/delete/", restService.DeleteHandler)
 
 	return http.ListenAndServe(addr, mux)
 }

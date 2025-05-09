@@ -51,6 +51,7 @@ func (s *SQLite) init() error {
 		autodelete_in_hours INTEGER,
 		created_at DATETIME,
 		deleted_at DATETIME,
+		is_broken BOOLEAN,
 		FOREIGN KEY (api_key_uuid) REFERENCES api_key(uuid) ON DELETE CASCADE,
 		FOREIGN KEY (parent_uuid) REFERENCES resource(uuid) ON DELETE SET NULL
 	);
@@ -71,9 +72,9 @@ func (s *SQLite) init() error {
 func (s *SQLite) insertResource(r *Resource) error {
 	_, err := s.db.Exec(`
 		INSERT INTO resource (
-			uuid, name, is_private, is_file, parent_uuid, api_key_uuid, autodelete_in_hours, created_at, deleted_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, r.UUID, r.Name, r.IsPrivate, r.IsFile, r.ParentUUID, r.APIKeyUUID, r.AutoDeleteInHours, r.CreatedAt, r.DeletedAt)
+			uuid, name, is_private, is_file, parent_uuid, api_key_uuid, autodelete_in_hours, created_at, deleted_at, is_broken
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	`, r.UUID, r.Name, r.IsPrivate, r.IsFile, r.ParentUUID, r.APIKeyUUID, r.AutoDeleteInHours, r.CreatedAt, r.DeletedAt, r.IsBroken)
 
 	if err != nil {
 		return err
@@ -82,9 +83,9 @@ func (s *SQLite) insertResource(r *Resource) error {
 }
 
 func (s *SQLite) findResourceByUUID(uuid string) (*Resource, error) {
-	row := s.db.QueryRow(`SELECT uuid, name, is_private, is_file, parent_uuid, api_key_uuid, autodelete_in_hours, created_at, deleted_at FROM resource WHERE uuid = ?`, uuid)
+	row := s.db.QueryRow(`SELECT uuid, name, is_private, is_file, parent_uuid, api_key_uuid, autodelete_in_hours, created_at, deleted_at, is_broken FROM resource WHERE uuid = ?`, uuid)
 	var r Resource
-	if err := row.Scan(&r.UUID, &r.Name, &r.IsPrivate, &r.IsFile, &r.ParentUUID, &r.APIKeyUUID, &r.AutoDeleteInHours, &r.CreatedAt, &r.DeletedAt); err != nil {
+	if err := row.Scan(&r.UUID, &r.Name, &r.IsPrivate, &r.IsFile, &r.ParentUUID, &r.APIKeyUUID, &r.AutoDeleteInHours, &r.CreatedAt, &r.DeletedAt, &r.IsBroken); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
@@ -98,39 +99,59 @@ func (s *SQLite) findActiveResource(name string, apiKeyUUID string, parentDir *s
 	if parentDir == nil {
 		row = s.db.QueryRow(`
 			SELECT uuid, name, is_private, is_file, parent_uuid, api_key_uuid,
-			       autodelete_in_hours, created_at, deleted_at
+			       autodelete_in_hours, created_at, deleted_at, is_broken
 			FROM resource
 			WHERE name = ?
 			  AND api_key_uuid = ?
 			  AND deleted_at IS NULL
 			  AND parent_uuid IS NULL
+			  AND is_broken = 0
 		`, name, apiKeyUUID)
 	} else {
 		row = s.db.QueryRow(`
 			SELECT uuid, name, is_private, is_file, parent_uuid, api_key_uuid,
-			       autodelete_in_hours, created_at, deleted_at
+			       autodelete_in_hours, created_at, deleted_at, is_broken
 			FROM resource
 			WHERE name = ?
 			  AND api_key_uuid = ?
 			  AND deleted_at IS NULL
+			  AND is_broken = 0
 			  AND parent_uuid = (
 			    SELECT uuid FROM resource
 			    WHERE name = ?
 			      AND api_key_uuid = ?
 			      AND deleted_at IS NULL
+				  AND is_broken = 0
 			  )
 		`, name, apiKeyUUID, *parentDir, apiKeyUUID)
 	}
 
 	var r Resource
 	if err := row.Scan(&r.UUID, &r.Name, &r.IsPrivate, &r.IsFile, &r.ParentUUID,
-		&r.APIKeyUUID, &r.AutoDeleteInHours, &r.CreatedAt, &r.DeletedAt); err != nil {
+		&r.APIKeyUUID, &r.AutoDeleteInHours, &r.CreatedAt, &r.DeletedAt, &r.IsBroken); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
 	}
 	return &r, nil
+}
+
+func (s *SQLite) updateResource(r *Resource) error {
+	_, err := s.db.Exec(`
+		UPDATE resource
+		SET name = ?,
+		    is_private = ?,
+		    is_file = ?,
+		    parent_uuid = ?,
+		    api_key_uuid = ?,
+		    autodelete_in_hours = ?,
+		    created_at = ?,
+		    deleted_at = ?,
+			is_broken = ?
+		WHERE uuid = ?
+	`, r.Name, r.IsPrivate, r.IsFile, r.ParentUUID, r.APIKeyUUID, r.AutoDeleteInHours, r.CreatedAt, r.DeletedAt, r.IsBroken, r.UUID)
+	return err
 }
 
 // insertAPIKey saves a hashed API key, a comment and the timestamp

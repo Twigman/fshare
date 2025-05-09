@@ -1,6 +1,8 @@
 package fake
 
-import "bytes"
+import (
+	"bytes"
+)
 
 type FakeMultipartFile struct {
 	*bytes.Reader

@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
-	"strings"
 
+	"github.com/twigman/fshare/src/internal/apperror"
 	"github.com/twigman/fshare/src/store"
 )
 
@@ -15,22 +15,8 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authHeader := r.Header.Get("Authorization")
-	if authHeader == "" {
-		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
-		return
-	}
-	const prefix = "Bearer "
-	if !strings.HasPrefix(authHeader, prefix) {
-		http.Error(w, "Invalid Authorization scheme", http.StatusUnauthorized)
-		return
-	}
-
-	// validate API key
-	apiKey := strings.TrimPrefix(authHeader, prefix)
-	key_uuid, err := s.apiKeyService.GetUUIDForAPIKey(apiKey)
+	keyUUID, err := s.authorizeBearer(w, r)
 	if err != nil {
-		http.Error(w, "Authorization failed", http.StatusUnauthorized)
 		return
 	}
 
@@ -69,11 +55,15 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	res := &store.Resource{
 		Name:              header.Filename,
 		IsPrivate:         isPrivate,
-		APIKeyUUID:        key_uuid,
+		APIKeyUUID:        keyUUID,
 		AutoDeleteInHours: i,
 	}
 
-	file_uuid, err := s.fileService.SaveUploadedFile(file, res)
+	file_uuid, err := s.resourceService.SaveUploadedFile(file, res)
+	if err == apperror.ErrInvalidFilename {
+		http.Error(w, apperror.ErrInvalidFilename.Msg, http.StatusBadRequest)
+		return
+	}
 	if err != nil {
 		http.Error(w, "Could not save file", http.StatusInternalServerError)
 		return

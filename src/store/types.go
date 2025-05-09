@@ -12,6 +12,7 @@ type Resource struct {
 	AutoDeleteInHours int
 	CreatedAt         time.Time
 	DeletedAt         *time.Time
+	IsBroken          bool
 }
 
 type APIKey struct {
