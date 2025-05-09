@@ -6,6 +6,11 @@ import (
 )
 
 func (s *RESTService) DeleteHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodDelete {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
 	keyUUID, err := s.authorizeBearer(w, r)
 	if err != nil {
 		return
