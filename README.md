@@ -10,7 +10,6 @@ A lightweight RESTful service to upload, share, view and delete files via UUID-b
 - Uploaded files are stored under `/upload/<user-uuid>/filename`
 - File preview with syntax highlighting (for code/text files)
 - Optional auto-deletion after a configurable number of hours
-- Soft delete support (`deleted_at` timestamp)
 
 ---
 
