@@ -96,14 +96,10 @@ The application can be configured using a JSON file. Below is a description of a
 | Field                   | Type   | Description                                                                 |
 |-------------------------|--------|-----------------------------------------------------------------------------|
 | `port`                  | int    | Port the HTTP server will listen on (e.g., `8080`)                          |
-| `upload_path`           | string | Local directory where uploaded files are stored                             |
+| `upload_path`           | string | Local directory where uploaded files are stored (must exist)                |
 | `max_file_size_in_mb`   | int    | Maximum allowed size per file upload, in megabytes                          |
 | `sqlite_db_path`        | string | Path to the SQLite database file used to store resources and API keys       |
 | `space_per_user_in_mb`  | int    | *(currently unused)* Planned per-user upload limit (in MB)                  |
-
-## Notes
-
-- The `upload_path` directory must exist.
 
 ## 🏁 Command-Line Flags
 
