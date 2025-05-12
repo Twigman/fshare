@@ -43,6 +43,8 @@ mkdir -p ./data/uploads
 openssl rand -hex 32
 ```
 
+> In the following steps the key `123` is used.
+
 ### 3. Run fshare
 
 #### First start (creates initial API key):
