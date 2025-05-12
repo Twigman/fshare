@@ -123,4 +123,4 @@ In addition to configuration via file, the application also needs command-line f
 - `--config` must always be provided; the application will not start without it.
 - If `--api-key` is provided, the system will attempt to create a new key on startup.
 - `--comment` and `--highly-trusted` are only relevant when `--api-key` is used.
-- Files uploaded by users with the --highly-trusted flag may be rendered directly in the browser, even if the file type could potentially contain active or unsafe content (e.g., .pdf, .svg, etc.).
+- Files uploaded by users with the --highly-trusted flag may be rendered directly in the browser, even if the file type could potentially contain active or unsafe content (pdf, svg, etc.).
