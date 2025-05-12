@@ -95,7 +95,7 @@ The application can be configured using a JSON file. Below is a description of a
 
 | Field                   | Type   | Description                                                                 |
 |-------------------------|--------|-----------------------------------------------------------------------------|
-| `port`                  | int    | Port the HTTP server will listen on (e.g., `8080`)                          |
+| `port`                  | int    | Port the HTTP server will listen on                                         |
 | `upload_path`           | string | Local directory where uploaded files are stored (must exist)                |
 | `max_file_size_in_mb`   | int    | Maximum allowed size per file upload, in megabytes                          |
 | `sqlite_db_path`        | string | Path to the SQLite database file used to store resources and API keys       |
@@ -110,9 +110,9 @@ In addition to configuration via file, the application also needs command-line f
 | Flag              | Type    | Required | Description                                                                 |
 |-------------------|---------|----------|-----------------------------------------------------------------------------|
 | `--config`        | string  | ✅ yes   | Path to the JSON configuration file                                         |
-| `--api-key`       | string  | ⛔ optional* | Initial API key to bootstrap the system (first start)         |
-| `--comment`       | string  | ⛔ optional | Optional comment describing the initial API key                             |
-| `--highly-trusted`| bool    | ⛔ optional | Grants elevated privileges to the initial API key user                      |
+| `--api-key`       | string  | ⛔ optional* | Initial API key to bootstrap the system (first start)                   |
+| `--comment`       | string  | ⛔ optional | Optional comment describing the initial API key                          |
+| `--highly-trusted`| bool    | ⛔ optional | Grants elevated privileges to the initial API key user                   |
 
 ### Notes
 
