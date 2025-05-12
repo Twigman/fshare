@@ -9,14 +9,7 @@ A lightweight RESTful service to upload, share, view and delete files via UUID-b
 - Each API key gets a dedicated "home" folder
 - Uploaded files are stored under `/upload/<user-uuid>/filename`
 - File preview with syntax highlighting (for code/text files)
-- Optional auto-deletion after a configurable number of hours
-
----
-
-## Behavior
-
-- Each API key maps to one user-specific home directory.
-- Only file uploads are currently supported – folders are not yet handled.
+- Optional auto-deletion after a configurable number of hours (not yet implemented)
 
 ---
 
