@@ -87,12 +87,32 @@ curl -X DELETE http://localhost:8080/delete/0196af20-4ca0-7e02-9441-dfd94cd75b39
 
 ---
 
-## Configuration
+## ⚙️ Configuration
 
-> Coming soon (optional: list of available config fields).
+The application can be configured using a JSON file. Below is a description of all available configuration fields.
 
----
+## Example (`config.json`)
 
-## License
+```json
+{
+    "port": 8080,
+    "upload_path": "./data/upload",
+    "max_file_size_in_mb": 10,
+    "sqlite_db_path": "./data/fshare.sqlite",
+    "space_per_user_in_mb": 100
+}
+```
 
-MIT © Twigman
+## Configuration Fields
+
+| Field                   | Type   | Description                                                                 |
+|-------------------------|--------|-----------------------------------------------------------------------------|
+| `port`                  | int    | Port the HTTP server will listen on (e.g., `8080`)                          |
+| `upload_path`           | string | Local directory where uploaded files are stored                             |
+| `max_file_size_in_mb`   | int    | Maximum allowed size per file upload, in megabytes                          |
+| `sqlite_db_path`        | string | Path to the SQLite database file used to store resources and API keys       |
+| `space_per_user_in_mb`  | int    | *(currently unused)* Planned per-user upload limit (in MB)                  |
+
+## Notes
+
+- The `upload_path` directory must exist.
