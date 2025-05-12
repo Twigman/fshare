@@ -26,7 +26,7 @@ A lightweight RESTful service to upload, share, view and delete files via UUID-b
 ### 1. Clone the project
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/fshare.git
+git clone https://github.com/twigman/fshare.git
 cd fshare
 ```
 
@@ -91,18 +91,6 @@ curl -X DELETE http://localhost:8080/delete/0196af20-4ca0-7e02-9441-dfd94cd75b39
 
 The application can be configured using a JSON file. Below is a description of all available configuration fields.
 
-## Example (`config.json`)
-
-```json
-{
-    "port": 8080,
-    "upload_path": "./data/upload",
-    "max_file_size_in_mb": 10,
-    "sqlite_db_path": "./data/fshare.sqlite",
-    "space_per_user_in_mb": 100
-}
-```
-
 ## Configuration Fields
 
 | Field                   | Type   | Description                                                                 |
@@ -116,3 +104,23 @@ The application can be configured using a JSON file. Below is a description of a
 ## Notes
 
 - The `upload_path` directory must exist.
+
+## 🏁 Command-Line Flags
+
+In addition to configuration via file, the application also needs command-line flags for certain runtime parameters.
+
+### Available Flags
+
+| Flag              | Type    | Required | Description                                                                 |
+|-------------------|---------|----------|-----------------------------------------------------------------------------|
+| `--config`        | string  | ✅ yes   | Path to the JSON configuration file                                         |
+| `--api-key`       | string  | ⛔ optional* | Initial API key to bootstrap the system (first start)         |
+| `--comment`       | string  | ⛔ optional | Optional comment describing the initial API key                             |
+| `--highly-trusted`| bool    | ⛔ optional | Grants elevated privileges to the initial API key user                      |
+
+### Notes
+
+- `--config` must always be provided; the application will not start without it.
+- If `--api-key` is provided, the system will attempt to create a new key on startup.
+- `--comment` and `--highly-trusted` are only relevant when `--api-key` is used.
+- Files uploaded by users with the --highly-trusted flag may be rendered directly in the browser, even if the file type could potentially contain active or unsafe content (e.g., .pdf, .svg, .mp3, etc.).
