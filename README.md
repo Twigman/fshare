@@ -37,6 +37,12 @@ mkdir -p ./data/uploads
 
 > Make sure the directory matches the path configured in your config file.
 
+### 3. Generate a save API key
+
+```bash
+openssl rand -hex 32
+```
+
 ### 3. Run fshare
 
 #### First start (creates initial API key):
