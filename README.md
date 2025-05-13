@@ -43,7 +43,7 @@ openssl rand -hex 32
 #### First start (creates initial API key):
 
 ```bash
-go run ./src --config ./data/config.json --api-key 123 --comment "initial key"
+go run ./src --config ./data/config.json --api-key 123 --comment "initial key" --highly-trusted
 ```
 
 #### Subsequent starts:
