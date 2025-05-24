@@ -23,7 +23,24 @@ func NewResourceService(cfg *config.Config, db *SQLite) *ResourceService {
 	return &ResourceService{cfg: cfg, db: db}
 }
 
-func (f *ResourceService) SaveUploadedFile(file multipart.File, r *Resource) (string, error) {
+func (s *ResourceService) BuildResourcePath(r *Resource) (string, error) {
+
+	// make sure target path is in upload folder
+	dstPath := filepath.Join(s.cfg.UploadPath, r.APIKeyUUID, r.Name)
+
+	absBase, err := filepath.Abs(s.cfg.UploadPath)
+	if err != nil {
+		return "", apperror.ErrResolvePath
+	}
+
+	absDst, err := filepath.Abs(dstPath)
+	if err != nil || !strings.HasPrefix(absDst, absBase) {
+		return "", apperror.ErrInvalidFilepath
+	}
+	return dstPath, nil
+}
+
+func (s *ResourceService) SaveUploadedFile(file multipart.File, r *Resource) (string, error) {
 	if strings.Contains(r.Name, "..") ||
 		strings.Contains(r.Name, "/") ||
 		strings.Contains(r.Name, "\\") ||
@@ -32,22 +49,16 @@ func (f *ResourceService) SaveUploadedFile(file multipart.File, r *Resource) (st
 	}
 
 	r.Name = strings.TrimSpace(r.Name)
-	safeName := filepath.Base(r.Name)
-	dstPath := filepath.Join(f.cfg.UploadPath, r.APIKeyUUID, safeName)
+	r.Name = filepath.Base(r.Name)
+
+	absDst, err := s.BuildResourcePath(r)
+	if err != nil {
+		return "", err
+	}
 
 	fileUUID, err := uuid.NewV7()
 	if err != nil {
 		return "", fmt.Errorf("UUID generation error: %v", err)
-	}
-
-	absBase, err := filepath.Abs(f.cfg.UploadPath)
-	if err != nil {
-		return "", fmt.Errorf("could not resolve base upload path")
-	}
-
-	absDst, err := filepath.Abs(dstPath)
-	if err != nil || !strings.HasPrefix(absDst, absBase) {
-		return "", fmt.Errorf("invalid file path")
 	}
 
 	tmpDir := filepath.Dir(absDst)
@@ -73,19 +84,18 @@ func (f *ResourceService) SaveUploadedFile(file multipart.File, r *Resource) (st
 	r.UUID = fileUUID.String()
 	r.IsFile = true
 	r.ParentUUID = nil
-	r.Name = safeName
 	r.CreatedAt = time.Now().UTC()
 	r.DeletedAt = nil
 
-	if err := f.db.insertResource(r); err != nil {
+	if err := s.db.insertResource(r); err != nil {
 		return "", err
 	}
 
 	return fileUUID.String(), nil
 }
 
-func (f *ResourceService) GetOrCreateHomeDir(hashed_key string) (*Resource, error) {
-	key, err := f.db.findAPIKeyByHash(hashed_key)
+func (s *ResourceService) GetOrCreateHomeDir(hashed_key string) (*Resource, error) {
+	key, err := s.db.findAPIKeyByHash(hashed_key)
 	if err != nil {
 		return nil, err
 	}
@@ -94,14 +104,14 @@ func (f *ResourceService) GetOrCreateHomeDir(hashed_key string) (*Resource, erro
 	}
 
 	// name of user home dir = api key uuid
-	r, err := f.db.findActiveResource(key.UUID, key.UUID, nil)
+	r, err := s.db.findActiveResource(key.UUID, key.UUID, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	if r == nil {
 		// home should not exist
-		homePath := filepath.Join(f.cfg.UploadPath, key.UUID)
+		homePath := filepath.Join(s.cfg.UploadPath, key.UUID)
 		err := os.Mkdir(homePath, 0o700)
 		if err != nil {
 			if os.IsExist(err) {
@@ -127,7 +137,7 @@ func (f *ResourceService) GetOrCreateHomeDir(hashed_key string) (*Resource, erro
 			DeletedAt:         nil,
 		}
 
-		err = f.db.insertResource(r)
+		err = s.db.insertResource(r)
 		if err != nil {
 			// delete home dir
 			err2 := os.Remove(homePath)
@@ -140,8 +150,8 @@ func (f *ResourceService) GetOrCreateHomeDir(hashed_key string) (*Resource, erro
 	return r, nil
 }
 
-func (f *ResourceService) GetResourceByUUID(uuid string) (*Resource, error) {
-	r, err := f.db.findResourceByUUID(uuid)
+func (s *ResourceService) GetResourceByUUID(uuid string) (*Resource, error) {
+	r, err := s.db.findResourceByUUID(uuid)
 	if err != nil {
 		return nil, err
 	}
@@ -151,8 +161,8 @@ func (f *ResourceService) GetResourceByUUID(uuid string) (*Resource, error) {
 	return r, nil
 }
 
-func (f *ResourceService) DeleteResourceByUUID(rUUID string, keyUUID string) error {
-	res, err := f.GetResourceByUUID(rUUID)
+func (s *ResourceService) DeleteResourceByUUID(rUUID string, keyUUID string) error {
+	res, err := s.GetResourceByUUID(rUUID)
 	if err != nil || res == nil || !res.IsFile || res.DeletedAt != nil {
 		return err
 	}
@@ -162,7 +172,7 @@ func (f *ResourceService) DeleteResourceByUUID(rUUID string, keyUUID string) err
 		return fmt.Errorf("authorization error")
 	}
 
-	resPath := filepath.Join(f.cfg.UploadPath, res.APIKeyUUID, res.Name)
+	resPath := filepath.Join(s.cfg.UploadPath, res.APIKeyUUID, res.Name)
 
 	// remove resource
 	if err := os.Remove(resPath); err != nil {
@@ -172,21 +182,21 @@ func (f *ResourceService) DeleteResourceByUUID(rUUID string, keyUUID string) err
 	t := time.Now().UTC()
 	res.DeletedAt = &t
 
-	err = f.db.updateResource(res)
+	err = s.db.updateResource(res)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (f *ResourceService) MarkResourceAsBroken(rUUID string) error {
-	res, err := f.GetResourceByUUID(rUUID)
+func (s *ResourceService) MarkResourceAsBroken(rUUID string) error {
+	res, err := s.GetResourceByUUID(rUUID)
 	if err != nil || res == nil || res.DeletedAt != nil {
 		return err
 	}
 
 	res.IsBroken = true
-	err = f.db.updateResource(res)
+	err = s.db.updateResource(res)
 	if err != nil {
 		return err
 	}

@@ -17,17 +17,18 @@ func NewAPIKeyService(db *SQLite) *APIKeyService {
 	return &APIKeyService{db: db}
 }
 
-func (a *APIKeyService) AddAPIKey(api_key string, comment string) (*APIKey, error) {
+func (a *APIKeyService) AddAPIKey(api_key string, comment string, isHighlyTrusted bool) (*APIKey, error) {
 	key_uuid, err := uuid.NewV7()
 	if err != nil {
 		return nil, fmt.Errorf("UUID generation error: %v", err)
 	}
 
 	key := &APIKey{
-		UUID:      key_uuid.String(),
-		HashedKey: HashAPIKey(api_key),
-		Comment:   comment,
-		CreatedAt: time.Now().UTC(),
+		UUID:            key_uuid.String(),
+		HashedKey:       HashAPIKey(api_key),
+		Comment:         comment,
+		IsHighlyTrusted: isHighlyTrusted,
+		CreatedAt:       time.Now().UTC(),
 	}
 
 	err = a.db.insertAPIKey(key)
@@ -46,13 +47,17 @@ func (a *APIKeyService) AnyAPIKeyExists() (bool, error) {
 	return count > 0, nil
 }
 
-func (a *APIKeyService) IsValidAPIKey(api_key string) (bool, error) {
-	key, err := a.db.findAPIKeyByHash(HashAPIKey(api_key))
+func (a *APIKeyService) IsAPIKeyHighlyTrusted(keyUUID string) (bool, error) {
+	key, err := a.db.findAPIKeyByUUID(keyUUID)
 	if err != nil {
 		return false, err
 	}
 
-	if key != nil {
+	if key == nil {
+		return false, nil
+	}
+
+	if key.IsHighlyTrusted {
 		return true, nil
 	}
 	return false, nil

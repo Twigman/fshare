@@ -20,7 +20,7 @@ func initServices(cfg *config.Config) (*ResourceService, *APIKey, error) {
 	rs := NewResourceService(cfg, db)
 	as := NewAPIKeyService(db)
 
-	key, err := as.AddAPIKey("123", "123")
+	key, err := as.AddAPIKey("123", "123", false)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -12,6 +12,7 @@ type Config struct {
 	UploadPath               string `json:"upload_path"`
 	MaxFileSizeInMB          int64  `json:"max_file_size_in_mb"` // 0 = no limit
 	SQLitePath               string `json:"sqlite_db_path"`
+	EnvPath                  string `json:"env_path"`
 	ContinuousFileValidation bool   `json:"continuous_file_validation"`
 	SpacePerUserInMB         int    `json:"space_per_user_in_mb"`
 	//MaxFolderDepth           int    `json:"max_folder_depth"`

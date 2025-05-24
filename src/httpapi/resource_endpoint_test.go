@@ -31,8 +31,9 @@ func TestResourceHandler_NotFound(t *testing.T) {
 		MaxFileSizeInMB: 5,
 		Port:            8080,
 		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
+		EnvPath:         filepath.Join(uploadDir, "test.env"),
 	}
-	_, _, restService, err := initTestServices(cfg)
+	_, _, restService, err := httpapi.InitTestServices(cfg)
 	if err != nil {
 		t.Errorf("Error initialising test services: %v", err)
 	}
@@ -52,7 +53,8 @@ func TestResourceHandler_PrivateUnauthorized(t *testing.T) {
 	const apiKey = "123"
 	const filename = "secret.txt"
 	const isPrivate = true
-	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -72,7 +74,8 @@ func TestResourceHandler_PrivateWrongKey(t *testing.T) {
 	const apiKey = "123"
 	const filename = "secret.txt"
 	const isPrivate = true
-	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -94,8 +97,8 @@ func TestResourceHandler_PrivateAuthorized(t *testing.T) {
 	const apiKey = "validkey"
 	const filename = "private.txt"
 	const isPrivate = true
-
-	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -116,8 +119,8 @@ func TestResourceHandler_PublicTextFile(t *testing.T) {
 	const apiKey = "apipub"
 	const filename = "example.go"
 	const isPrivate = false
-
-	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -140,8 +143,8 @@ func TestResourceHandler_PublicImage(t *testing.T) {
 	const apiKey = "imgkey"
 	const filename = "image.png"
 	const isPrivate = false
-
-	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -164,8 +167,8 @@ func TestResourceHandler_PublicBinaryDownload(t *testing.T) {
 	const apiKey = "binkey"
 	const filename = "data.zip"
 	const isPrivate = false
-
-	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -188,8 +191,8 @@ func TestResourceHandler_FileMissing(t *testing.T) {
 	const apiKey = "misskey"
 	const filename = "ghost.txt"
 	const isPrivate = false
-
-	restService, rs, key, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, rs, key, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
