@@ -69,6 +69,9 @@ func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, i
 	return restService, rs, key, fileUUID, nil
 }
 
+// Tests valid url
+// manipulated uuid
+// manipulated expires
 func TestValidateSignedRequest(t *testing.T) {
 	// setup
 	uploadDir := t.TempDir()
