@@ -27,7 +27,7 @@ func InitTestServices(cfg *config.Config) (*store.APIKeyService, *store.Resource
 	return as, rs, restService, nil
 }
 
-func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, isPrivate bool, keyHighlyTrusted bool) (*RESTService, *store.ResourceService, *store.APIKey, string, error) {
+func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, isPrivate bool, keyHighlyTrusted bool) (*RESTService, *store.ResourceService, *store.APIKeyService, *store.APIKey, string, error) {
 	cfg := &config.Config{
 		UploadPath:      uploadDir,
 		MaxFileSizeInMB: 5,
@@ -38,17 +38,17 @@ func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, i
 
 	as, rs, restService, err := InitTestServices(cfg)
 	if err != nil {
-		return nil, nil, nil, "", err
+		return nil, nil, nil, nil, "", err
 	}
 
 	key, err := as.AddAPIKey(apiKey, "test key", keyHighlyTrusted)
 	if err != nil {
-		return nil, nil, nil, "", err
+		return nil, nil, nil, nil, "", err
 	}
 
 	_, err = rs.GetOrCreateHomeDir(key.HashedKey)
 	if err != nil {
-		return nil, nil, nil, "", err
+		return nil, nil, nil, nil, "", err
 	}
 
 	content := []byte("Hello World")
@@ -63,10 +63,10 @@ func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, i
 
 	fileUUID, err := rs.SaveUploadedFile(file, r)
 	if err != nil {
-		return nil, nil, nil, "", err
+		return nil, nil, nil, nil, "", err
 	}
 
-	return restService, rs, key, fileUUID, nil
+	return restService, rs, as, key, fileUUID, nil
 }
 
 // Tests valid url

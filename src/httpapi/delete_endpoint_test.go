@@ -16,7 +16,7 @@ func TestDeleteHandler_WithoutAuth(t *testing.T) {
 	const filename = "test.txt"
 	const isPrivate = true
 	const keyHighlyTrusted = false
-	restService, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Errorf("Test setup error: %v", err)
 	}
@@ -37,7 +37,7 @@ func TestDeleteHandler_Success(t *testing.T) {
 	const filename = "test.txt"
 	const isPrivate = true
 	const keyHighlyTrusted = false
-	restService, rs, key, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
+	restService, rs, _, key, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Errorf("Test setup error: %v", err)
 	}
@@ -79,7 +79,7 @@ func TestDeleteHandler_WrongKey(t *testing.T) {
 	const filename = "test.txt"
 	const isPrivate = true
 	const keyHighlyTrusted = false
-	restService, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Errorf("Test setup error: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestDeleteHandler_NoExistingUUID(t *testing.T) {
 	const filename = "test.txt"
 	const isPrivate = true
 	const keyHighlyTrusted = false
-	restService, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Errorf("Test setup error: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestDeleteHandler_WrongMethod(t *testing.T) {
 	const filename = "test.txt"
 	const isPrivate = true
 	const keyHighlyTrusted = false
-	restService, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Errorf("Test setup error: %v", err)
 	}

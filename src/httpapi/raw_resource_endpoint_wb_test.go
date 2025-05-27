@@ -35,7 +35,7 @@ func TestRawResourceHandler_MethodNotAllowed(t *testing.T) {
 
 func TestRawResourceHandler_Unauthorized(t *testing.T) {
 	uploadDir := t.TempDir()
-	restService, _, _, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", "test.txt", false, false)
+	restService, _, _, _, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", "test.txt", false, false)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestRawResourceHandler_Unauthorized(t *testing.T) {
 func TestRawResourceHandler_FileMissing(t *testing.T) {
 	uploadDir := t.TempDir()
 	filename := "missing.txt"
-	restService, rs, key, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", filename, false, false)
+	restService, rs, _, key, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", filename, false, false)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -94,7 +94,7 @@ func TestRawResourceHandler_FileMissing(t *testing.T) {
 
 func TestRawResourceHandler_ValidSigningWithWrongUUID(t *testing.T) {
 	uploadDir := t.TempDir()
-	restService, rs, _, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", "test.txt", false, false)
+	restService, rs, _, _, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", "test.txt", false, false)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -128,7 +128,7 @@ func TestRawResourceHandler_ValidSigningWithWrongUUID(t *testing.T) {
 
 func TestRawResourceHandler_Success(t *testing.T) {
 	uploadDir := t.TempDir()
-	restService, _, _, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", "hello.txt", false, false)
+	restService, _, _, _, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", "hello.txt", false, false)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -156,7 +156,7 @@ func TestRawResourceHandler_Success(t *testing.T) {
 
 func TestRawResourceHandler_DownloadHeader(t *testing.T) {
 	uploadDir := t.TempDir()
-	restService, _, _, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", "archive.zip", false, false)
+	restService, _, _, _, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", "archive.zip", false, false)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}

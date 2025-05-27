@@ -20,6 +20,7 @@ var imageTypeWhitelistTrusted = func() map[string]bool {
 	for k, v := range imageTypeWhitelistDefault {
 		trusted[k] = v
 	}
+	// add types
 	trusted[".svg"] = true
 	trusted[".ico"] = true
 	trusted[".tif"] = true
