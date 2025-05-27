@@ -38,6 +38,7 @@ func (s *SQLite) init() error {
 		uuid TEXT PRIMARY KEY,
 		hashed_key TEXT UNIQUE,
 		comment TEXT,
+		is_highly_trusted BOOLEAN,
 		created_at DATETIME
 	);
 
@@ -157,9 +158,9 @@ func (s *SQLite) updateResource(r *Resource) error {
 // insertAPIKey saves a hashed API key, a comment and the timestamp
 func (s *SQLite) insertAPIKey(key *APIKey) error {
 	_, err := s.db.Exec(`
-		INSERT INTO api_key (uuid, hashed_key, comment, created_at)
-		VALUES (?, ?, ?, ?)
-	`, key.UUID, key.HashedKey, key.Comment, key.CreatedAt)
+		INSERT INTO api_key (uuid, hashed_key, comment, is_highly_trusted, created_at)
+		VALUES (?, ?, ?, ?, ?)
+	`, key.UUID, key.HashedKey, key.Comment, key.IsHighlyTrusted, key.CreatedAt)
 
 	if err != nil {
 		return fmt.Errorf("error adding API key: %v", err)
@@ -180,9 +181,22 @@ func (s *SQLite) countApiKeyEntries() (int, error) {
 
 // findAPIKeyByHash finds and returns the api_key entry containing the hashed key
 func (s *SQLite) findAPIKeyByHash(hash string) (*APIKey, error) {
-	row := s.db.QueryRow(`SELECT uuid, hashed_key, comment, created_at FROM api_key WHERE hashed_key = ?`, hash)
+	row := s.db.QueryRow(`SELECT uuid, hashed_key, comment, is_highly_trusted, created_at FROM api_key WHERE hashed_key = ?`, hash)
 	var k APIKey
-	if err := row.Scan(&k.UUID, &k.HashedKey, &k.Comment, &k.CreatedAt); err != nil {
+	if err := row.Scan(&k.UUID, &k.HashedKey, &k.Comment, &k.IsHighlyTrusted, &k.CreatedAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &k, nil
+}
+
+// findAPIKeyByUUID finds and returns the api_key entry by its uuid
+func (s *SQLite) findAPIKeyByUUID(uuid string) (*APIKey, error) {
+	row := s.db.QueryRow(`SELECT uuid, hashed_key, comment, is_highly_trusted, created_at FROM api_key WHERE uuid = ?`, uuid)
+	var k APIKey
+	if err := row.Scan(&k.UUID, &k.HashedKey, &k.Comment, &k.IsHighlyTrusted, &k.CreatedAt); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}

@@ -20,7 +20,7 @@ func initServices(cfg *config.Config) (*ResourceService, *APIKey, error) {
 	rs := NewResourceService(cfg, db)
 	as := NewAPIKeyService(db)
 
-	key, err := as.AddAPIKey("123", "123")
+	key, err := as.AddAPIKey("123", "123", false)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -95,12 +95,15 @@ func TestFileService_GetOrCreateHomeDir(t *testing.T) {
 
 	// prepare api key
 	apiKey := "test-api-key"
-	hashed := HashAPIKey(apiKey)
+	hashedKey, err := hashAPIKey(apiKey)
+	if err != nil {
+		t.Fatalf("Error hashing key: %v", err)
+	}
 
 	apiKeyUUID := "00000000-0000-0000-0000-000000000001"
 	err = db.insertAPIKey(&APIKey{
 		UUID:      apiKeyUUID,
-		HashedKey: hashed,
+		HashedKey: hashedKey,
 		Comment:   "Test Key",
 		CreatedAt: time.Now().UTC(),
 	})
@@ -109,7 +112,7 @@ func TestFileService_GetOrCreateHomeDir(t *testing.T) {
 	}
 
 	// create home dir
-	resource, err := rs.GetOrCreateHomeDir(hashed)
+	resource, err := rs.GetOrCreateHomeDir(hashedKey)
 	if err != nil {
 		t.Fatalf("GetOrCreateHomeDir error: %v", err)
 	}
@@ -131,7 +134,7 @@ func TestFileService_GetOrCreateHomeDir(t *testing.T) {
 	}
 
 	// check idempotence
-	r2, err := rs.GetOrCreateHomeDir(hashed)
+	r2, err := rs.GetOrCreateHomeDir(hashedKey)
 	if err != nil {
 		t.Fatalf("second GetOrCreateHomeDir call failed: %v", err)
 	}

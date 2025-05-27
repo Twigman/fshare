@@ -16,8 +16,9 @@ type Resource struct {
 }
 
 type APIKey struct {
-	UUID      string
-	HashedKey string
-	Comment   string
-	CreatedAt time.Time
+	UUID            string
+	HashedKey       string
+	Comment         string
+	IsHighlyTrusted bool
+	CreatedAt       time.Time
 }

@@ -31,8 +31,9 @@ func TestResourceHandler_NotFound(t *testing.T) {
 		MaxFileSizeInMB: 5,
 		Port:            8080,
 		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
+		EnvPath:         filepath.Join(uploadDir, "test.env"),
 	}
-	_, _, restService, err := initTestServices(cfg)
+	_, _, restService, err := httpapi.InitTestServices(cfg)
 	if err != nil {
 		t.Errorf("Error initialising test services: %v", err)
 	}
@@ -52,7 +53,8 @@ func TestResourceHandler_PrivateUnauthorized(t *testing.T) {
 	const apiKey = "123"
 	const filename = "secret.txt"
 	const isPrivate = true
-	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -72,9 +74,16 @@ func TestResourceHandler_PrivateWrongKey(t *testing.T) {
 	const apiKey = "123"
 	const filename = "secret.txt"
 	const isPrivate = true
-	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, _, as, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
+	}
+
+	// add second key
+	_, err = as.AddAPIKey("321", "second", true)
+	if err != nil {
+		t.Fatalf("could not add second API key: %v", err)
 	}
 
 	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
@@ -89,13 +98,13 @@ func TestResourceHandler_PrivateWrongKey(t *testing.T) {
 	}
 }
 
-func TestResourceHandler_PrivateAuthorized(t *testing.T) {
+func TestResourceHandler_PrivateAuthorizedNotTrusted(t *testing.T) {
 	uploadDir := t.TempDir()
 	const apiKey = "validkey"
 	const filename = "private.txt"
 	const isPrivate = true
-
-	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -111,13 +120,13 @@ func TestResourceHandler_PrivateAuthorized(t *testing.T) {
 	}
 }
 
-func TestResourceHandler_PublicTextFile(t *testing.T) {
+func TestResourceHandler_PublicTextFileNotTrusted(t *testing.T) {
 	uploadDir := t.TempDir()
 	const apiKey = "apipub"
 	const filename = "example.go"
 	const isPrivate = false
-
-	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -135,13 +144,13 @@ func TestResourceHandler_PublicTextFile(t *testing.T) {
 	}
 }
 
-func TestResourceHandler_PublicImage(t *testing.T) {
+func TestResourceHandler_PublicPNGNotTruested(t *testing.T) {
 	uploadDir := t.TempDir()
 	const apiKey = "imgkey"
 	const filename = "image.png"
 	const isPrivate = false
-
-	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -159,13 +168,13 @@ func TestResourceHandler_PublicImage(t *testing.T) {
 	}
 }
 
-func TestResourceHandler_PublicBinaryDownload(t *testing.T) {
+func TestResourceHandler_PublicBinaryDownloadNotTrusted(t *testing.T) {
 	uploadDir := t.TempDir()
 	const apiKey = "binkey"
 	const filename = "data.zip"
 	const isPrivate = false
-
-	restService, _, _, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -183,13 +192,13 @@ func TestResourceHandler_PublicBinaryDownload(t *testing.T) {
 	}
 }
 
-func TestResourceHandler_FileMissing(t *testing.T) {
+func TestResourceHandler_PublicFileMissing(t *testing.T) {
 	uploadDir := t.TempDir()
 	const apiKey = "misskey"
 	const filename = "ghost.txt"
 	const isPrivate = false
-
-	restService, rs, key, fileUUID, err := setupExistingTestUpload(uploadDir, apiKey, filename, isPrivate)
+	const keyHighlyTrusted = false
+	restService, rs, _, key, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -220,5 +229,108 @@ func TestResourceHandler_FileMissing(t *testing.T) {
 
 	if !r.IsBroken {
 		t.Fatalf("Missing file was not updated in db")
+	}
+}
+
+func TestResourceHandler_PublicPDFNotTrusted(t *testing.T) {
+	uploadDir := t.TempDir()
+	const apiKey = "key"
+	const filename = "test.pdf"
+	const isPrivate = false
+	const keyHighlyTrusted = false
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
+	if err != nil {
+		t.Fatalf("Setup error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	w := httptest.NewRecorder()
+
+	restService.ResourceHandler(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected %d, got %d", http.StatusOK, w.Code)
+	}
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/octet-stream") {
+		t.Errorf("Expected octet-stream content type, got %s", ct)
+	}
+	if disp := w.Header().Get("Content-Disposition"); !strings.Contains(disp, "attachment") {
+		t.Errorf("Expected attachment disposition, got %s", disp)
+	}
+}
+
+func TestResourceHandler_PublicPDFTrusted(t *testing.T) {
+	uploadDir := t.TempDir()
+	const apiKey = "key"
+	const filename = "test.pdf"
+	const isPrivate = false
+	const keyHighlyTrusted = true
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
+	if err != nil {
+		t.Fatalf("Setup error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	w := httptest.NewRecorder()
+
+	restService.ResourceHandler(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected %d, got %d", http.StatusOK, w.Code)
+	}
+	// not application/pdf because the pdf is displayed in an iframe
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "text/html") {
+		t.Errorf("Expected html content type, got %s", ct)
+	}
+}
+
+func TestResourceHandler_PublicSVGTrusted(t *testing.T) {
+	uploadDir := t.TempDir()
+	const apiKey = "key"
+	const filename = "test.svg"
+	const isPrivate = false
+	const keyHighlyTrusted = true
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
+	if err != nil {
+		t.Fatalf("Setup error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	w := httptest.NewRecorder()
+
+	restService.ResourceHandler(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected %d, got %d", http.StatusOK, w.Code)
+	}
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "image/svg") {
+		t.Errorf("Expected svg content type, got %s", ct)
+	}
+}
+
+func TestResourceHandler_PublicSVGNotTrusted(t *testing.T) {
+	uploadDir := t.TempDir()
+	const apiKey = "key"
+	const filename = "test.svg"
+	const isPrivate = false
+	const keyHighlyTrusted = false
+	restService, _, _, _, fileUUID, err := httpapi.SetupExistingTestUpload(uploadDir, apiKey, filename, isPrivate, keyHighlyTrusted)
+	if err != nil {
+		t.Fatalf("Setup error: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	w := httptest.NewRecorder()
+
+	restService.ResourceHandler(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("Expected %d, got %d", http.StatusOK, w.Code)
+	}
+	if ct := w.Header().Get("Content-Type"); !strings.HasPrefix(ct, "application/octet-stream") {
+		t.Errorf("Expected octet-stream content type, got %s", ct)
+	}
+	if disp := w.Header().Get("Content-Disposition"); !strings.Contains(disp, "attachment") {
+		t.Errorf("Expected attachment disposition, got %s", disp)
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
@@ -38,16 +39,12 @@ func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	resPath := filepath.Join(s.config.UploadPath, res.APIKeyUUID, res.Name)
-	fileExt := filepath.Ext(res.Name)
-
-	absPath, err := filepath.Abs(resPath)
-	basePath, err2 := filepath.Abs(s.config.UploadPath)
-
-	if err != nil || err2 != nil || !strings.HasPrefix(absPath, basePath) {
-		http.Error(w, "Invalid path", http.StatusBadRequest)
+	resPath, err := s.resourceService.BuildResourcePath(res)
+	if err != nil {
+		http.Error(w, "Could not resolve filepath", http.StatusInternalServerError)
 		return
 	}
+	fileExt := filepath.Ext(res.Name)
 
 	// detect mime type
 	mimeType := mime.TypeByExtension(fileExt)
@@ -64,16 +61,83 @@ func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if isRenderableTextFile(fileExt) {
-		nonce := generateNonce()
+	keyIsHighlyTrusted, err := s.apiKeyService.IsAPIKeyHighlyTrusted(res.APIKeyUUID)
+	if err != nil {
+		// proceed
+		keyIsHighlyTrusted = false
+	}
 
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("Content-Security-Policy", fmt.Sprintf(
-			"default-src 'none'; script-src https://cdnjs.cloudflare.com 'nonce-%s'; style-src https://cdnjs.cloudflare.com 'nonce-%s'; img-src 'self'; object-src 'none'; base-uri 'none';",
-			nonce, nonce,
-		))
+	if isRenderableTextFile(fileExt, keyIsHighlyTrusted) {
+		renderText(w, getLangClass(fileExt, keyIsHighlyTrusted), string(content))
+	} else if isRenderableImageFile(fileExt, keyIsHighlyTrusted) {
+		// present images in browser
+		if strings.HasPrefix(mimeType, "image/") {
+			w.Header().Set("Content-Type", mimeType)
+			w.Header().Set("X-Content-Type-Options", "nosniff")
+			http.ServeFile(w, r, resPath)
+			return
+		}
+	} else if keyIsHighlyTrusted && isBrowserRenderableFile(fileExt) {
+		s.renderMediaViewer(w, res.UUID, mimeType)
+		return
+	} else {
+		// force download
+		w.Header().Set("Content-Type", "application/octet-stream")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", res.Name))
+		http.ServeFile(w, r, resPath)
+		return
+	}
+}
 
-		fmt.Fprintf(w, `
+func generateNonce() string {
+	b := make([]byte, 16)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "staticfallback"
+	}
+	return base64.StdEncoding.EncodeToString(b)
+}
+
+func (s *RESTService) renderMediaViewer(w http.ResponseWriter, rUUID string, mimeType string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+
+	expiry := time.Now().Add(30 * time.Second)
+	signedURL, err := s.generateSignedURL("/raw", rUUID, expiry)
+	if err != nil {
+		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
+		return
+	}
+
+	escapedPath := html.EscapeString(signedURL)
+
+	var embed string
+	switch {
+	case strings.HasPrefix(mimeType, "application/pdf"):
+		embed = fmt.Sprintf(`<iframe src="%s" width="100%%" height="100%%" style="border:none;"></iframe>`, escapedPath)
+	case strings.HasPrefix(mimeType, "image/svg"):
+		embed = fmt.Sprintf(`<img src="%s" style="max-width:100%%; max-height:100%%;">`, escapedPath)
+	default:
+		http.Error(w, "Unsupported viewer", http.StatusUnsupportedMediaType)
+		return
+	}
+
+	fmt.Fprintf(w, `<!DOCTYPE html>
+	<html><head><meta charset="utf-8"><title>Viewer</title></head>
+	<body style="margin:0; background:#111; color:#fff; display:flex; align-items:center; justify-content:center; height:100vh;">
+	%s
+	</body></html>`, embed)
+}
+
+func renderText(w http.ResponseWriter, langClass string, content string) {
+	nonce := generateNonce()
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Security-Policy", fmt.Sprintf(
+		"default-src 'none'; script-src https://cdnjs.cloudflare.com 'nonce-%s'; style-src https://cdnjs.cloudflare.com 'nonce-%s'; img-src 'self'; object-src 'none'; base-uri 'none';",
+		nonce, nonce,
+	))
+
+	fmt.Fprintf(w, `
 		<!DOCTYPE html>
 		<html lang="en">
 		<head>
@@ -115,29 +179,5 @@ func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
 		<pre><code class="language-%s">%s</code></pre>
 		</body>
 		</html>
-		`, nonce, nonce, getLangClass(fileExt), html.EscapeString(string(content)))
-	} else if isRenderableImageFile(fileExt) {
-		// present images in browser
-		if strings.HasPrefix(mimeType, "image/") {
-			w.Header().Set("Content-Type", mimeType)
-			w.Header().Set("X-Content-Type-Options", "nosniff")
-			http.ServeFile(w, r, resPath)
-			return
-		}
-	} else {
-		// force download
-		w.Header().Set("Content-Type", "application/octet-stream")
-		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", res.Name))
-		http.ServeFile(w, r, resPath)
-		return
-	}
-}
-
-func generateNonce() string {
-	b := make([]byte, 16)
-	_, err := rand.Read(b)
-	if err != nil {
-		return "staticfallback"
-	}
-	return base64.StdEncoding.EncodeToString(b)
+		`, nonce, nonce, langClass, html.EscapeString(content))
 }

@@ -15,6 +15,7 @@ import (
 func main() {
 	flagAPIKey := flag.String("api-key", "", "initial API key to start the service")
 	flagComment := flag.String("comment", "", "comment for initial API key")
+	flagHighlyTrusted := flag.Bool("highly-trusted", false, "more privileges for the key user")
 	flagConfigPath := flag.String("config", "", "config file path")
 
 	flag.Parse()
@@ -53,7 +54,7 @@ func main() {
 
 	// add api-key if provided
 	if *flagAPIKey != "" {
-		key, err := as.AddAPIKey(*flagAPIKey, *flagComment)
+		key, err := as.AddAPIKey(*flagAPIKey, *flagComment, *flagHighlyTrusted)
 		if err != nil {
 			log.Fatalf("Error saving initial API key: %v", err)
 		}
@@ -67,7 +68,7 @@ func main() {
 		log.Printf("Created home dir: %s\n", filepath.Join(cfg.UploadPath, r.Name))
 	}
 
-	if ok, _ := as.AnyAPIKeyExists(); !ok {
+	if !as.AnyAPIKeyExists() {
 		log.Fatalf("No API key exists. Please provide an API key when starting the service by using the parameters --api-key and --comment.")
 	}
 
@@ -89,6 +90,7 @@ func startServer(cfg *config.Config, as *store.APIKeyService, rs *store.Resource
 	mux.HandleFunc("/upload", restService.UploadHandler)
 	mux.HandleFunc("/r/", restService.ResourceHandler)
 	mux.HandleFunc("/delete/", restService.DeleteHandler)
+	mux.HandleFunc("/raw/", restService.RawResourceHandler)
 
 	return http.ListenAndServe(addr, mux)
 }
