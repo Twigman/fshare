@@ -24,9 +24,16 @@ func (s *RESTService) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 		if err == apperror.ErrDeleteHomeDirNotAllowed {
 			writeJSONResponse(w, "No permission to delete this object", http.StatusForbidden)
 			return
+		} else if err == apperror.ErrFileAlreadyDeleted {
+			writeJSONResponse(w, "Resource not found", http.StatusNotFound)
+			return
+		} else if err == apperror.ErrResourceNotFound {
+			writeJSONResponse(w, "Resource not found", http.StatusNotFound)
+			return
+		} else {
+			writeJSONResponse(w, "Delete failed", http.StatusInternalServerError)
+			return
 		}
-		writeJSONResponse(w, "Delete failed", http.StatusInternalServerError)
-		return
 	}
 
 	w.WriteHeader(http.StatusNoContent)

@@ -59,9 +59,9 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		AutoDeleteInHours: i,
 	}
 
-	file_uuid, err := s.resourceService.SaveUploadedFile(file, res)
-	if err == apperror.ErrInvalidFilename {
-		writeJSONResponse(w, apperror.ErrInvalidFilename.Msg, http.StatusBadRequest)
+	file_uuid, err := s.resourceService.SaveUploadedFile(file, res, true)
+	if err == apperror.ErrFileInvalidFilename {
+		writeJSONResponse(w, apperror.ErrFileInvalidFilename.Msg, http.StatusBadRequest)
 		return
 	}
 	if err != nil {

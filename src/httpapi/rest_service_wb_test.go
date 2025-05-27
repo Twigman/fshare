@@ -61,7 +61,7 @@ func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, i
 		AutoDeleteInHours: 0,
 	}
 
-	fileUUID, err := rs.SaveUploadedFile(file, r)
+	fileUUID, err := rs.SaveUploadedFile(file, r, false)
 	if err != nil {
 		return nil, nil, nil, nil, "", err
 	}

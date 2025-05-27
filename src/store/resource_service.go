@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,30 +31,61 @@ func (s *ResourceService) BuildResourcePath(r *Resource) (string, error) {
 
 	absBase, err := filepath.Abs(s.cfg.UploadPath)
 	if err != nil {
-		return "", apperror.ErrResolvePath
+		return "", apperror.ErrResourceResolvePath
 	}
 
 	absDst, err := filepath.Abs(dstPath)
 	if err != nil || !strings.HasPrefix(absDst, absBase) {
-		return "", apperror.ErrInvalidFilepath
+		return "", apperror.ErrFileInvalidFilepath
 	}
-	return dstPath, nil
+	return absDst, nil
 }
 
-func (s *ResourceService) SaveUploadedFile(file multipart.File, r *Resource) (string, error) {
+func (s *ResourceService) SaveUploadedFile(file multipart.File, r *Resource, allowRename bool) (string, error) {
 	if strings.Contains(r.Name, "..") ||
 		strings.Contains(r.Name, "/") ||
 		strings.Contains(r.Name, "\\") ||
 		strings.HasPrefix(r.Name, ".") {
-		return "", apperror.ErrInvalidFilename
+		return "", apperror.ErrFileInvalidFilename
 	}
 
 	r.Name = strings.TrimSpace(r.Name)
 	r.Name = filepath.Base(r.Name)
 
-	absDst, err := s.BuildResourcePath(r)
-	if err != nil {
-		return "", err
+	originalName := r.Name
+	var fileVersion string
+	var absDst string
+	var err error
+
+	// does file exist?
+	for {
+		r.Name = fileVersion + originalName
+		absDst, err = s.BuildResourcePath(r)
+		if err != nil {
+			return "", err
+		}
+		_, err = os.Stat(absDst)
+		if err == nil {
+			if allowRename {
+				// rename
+				if fileVersion == "" {
+					fileVersion = "0"
+				} else {
+					i, err := strconv.Atoi(fileVersion)
+					if err != nil {
+						return "", fmt.Errorf("error parsing fileVersion: %v", err)
+					}
+					fileVersion = fmt.Sprint(i + 1)
+				}
+			} else {
+				return "", apperror.ErrFileAlreadyExists
+			}
+		} else if os.IsNotExist(err) {
+			// file does not exist
+			break
+		} else {
+			return "", fmt.Errorf("unexpected error when renaming file: %v", err)
+		}
 	}
 
 	fileUUID, err := uuid.NewV7()
@@ -163,13 +195,22 @@ func (s *ResourceService) GetResourceByUUID(uuid string) (*Resource, error) {
 
 func (s *ResourceService) DeleteResourceByUUID(rUUID string, keyUUID string) error {
 	res, err := s.GetResourceByUUID(rUUID)
-	if err != nil || res == nil || res.DeletedAt != nil {
+	if err != nil {
 		return err
 	}
 
 	// needs to be owner
 	if res.APIKeyUUID != keyUUID {
 		return fmt.Errorf("authorization error")
+	}
+
+	if res == nil {
+		return apperror.ErrResourceNotFound
+	}
+
+	if res.DeletedAt != nil {
+		// already deleted
+		return apperror.ErrFileAlreadyDeleted
 	}
 
 	// detect home dir

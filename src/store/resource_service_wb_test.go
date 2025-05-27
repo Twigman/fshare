@@ -63,7 +63,7 @@ func TestFileService_SaveUploadedFile(t *testing.T) {
 	}
 
 	// tested function
-	_, err = rs.SaveUploadedFile(file, res)
+	_, err = rs.SaveUploadedFile(file, res, false)
 	if err != nil {
 		t.Fatalf("Error saving file: %v", err)
 	}
@@ -140,5 +140,65 @@ func TestFileService_GetOrCreateHomeDir(t *testing.T) {
 	}
 	if r2.UUID != resource.UUID {
 		t.Errorf("expected same resource UUID, got %s vs %s", r2.UUID, resource.UUID)
+	}
+}
+
+func TestFileService_SaveUploadedFileMultipleTimes(t *testing.T) {
+	uploadDir := t.TempDir()
+	const testFilename = "test.txt"
+
+	cfg := &config.Config{
+		UploadPath:      uploadDir,
+		MaxFileSizeInMB: 2,
+		Port:            8080,
+		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
+	}
+
+	rs, key, err := initServices(cfg)
+	if err != nil {
+		t.Fatalf("Error initializing test services: %v", err)
+	}
+
+	// create dir
+	err = os.Mkdir(filepath.Join(uploadDir, key.UUID), 0o700)
+	if err != nil {
+		t.Fatalf("Error creating home dir: %v", err)
+	}
+
+	res := &Resource{
+		Name:              testFilename,
+		IsPrivate:         true,
+		APIKeyUUID:        key.UUID,
+		AutoDeleteInHours: 0,
+	}
+
+	counter := 15
+
+	for i := 0; i < counter; i++ {
+		// testfile
+		// needs to be created every iteration
+		content := []byte("Hello World")
+		file := &fake.FakeMultipartFile{Reader: bytes.NewReader(content)}
+
+		// create file for the first time
+		fileUUID, err := rs.SaveUploadedFile(file, res, true)
+		if err != nil {
+			t.Fatalf("Error saving file: %v", err)
+		}
+
+		r, err := rs.GetResourceByUUID(fileUUID)
+		if err != nil {
+			t.Fatalf("Error loading resource from db: %v", err)
+		}
+
+		savedPath := filepath.Join(uploadDir, key.UUID, r.Name)
+		data, err := os.ReadFile(savedPath)
+		if err != nil {
+			t.Fatalf("File was not saved: %v", err)
+		}
+
+		if !bytes.Equal(data, content) {
+			t.Errorf("Wrong file content.\nGot:  %q\nWant: %q", data, content)
+		}
 	}
 }
