@@ -11,7 +11,7 @@ import (
 
 func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		writeJSONResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -25,13 +25,13 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		r.Body = http.MaxBytesReader(w, r.Body, s.config.MaxFileSizeBytes())
 		// space in RAM
 		if err := r.ParseMultipartForm(s.config.MaxFileSizeBytes()); err != nil {
-			http.Error(w, "File too large", http.StatusRequestEntityTooLarge)
+			writeJSONResponse(w, "File too large", http.StatusRequestEntityTooLarge)
 			return
 		}
 	} else {
 		// 32 MiB for RAM, rest will be created in /tmp
 		if err := r.ParseMultipartForm(32 << 20); err != nil {
-			http.Error(w, "Upload error", http.StatusBadRequest)
+			writeJSONResponse(w, "Upload error", http.StatusBadRequest)
 			return
 		}
 	}
@@ -39,7 +39,7 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	file, header, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "Invalid file", http.StatusBadRequest)
+		writeJSONResponse(w, "Invalid file", http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
@@ -61,11 +61,11 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	file_uuid, err := s.resourceService.SaveUploadedFile(file, res)
 	if err == apperror.ErrInvalidFilename {
-		http.Error(w, apperror.ErrInvalidFilename.Msg, http.StatusBadRequest)
+		writeJSONResponse(w, apperror.ErrInvalidFilename.Msg, http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(w, "Could not save file", http.StatusInternalServerError)
+		writeJSONResponse(w, "Could not save file", http.StatusInternalServerError)
 		return
 	}
 

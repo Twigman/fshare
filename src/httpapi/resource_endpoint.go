@@ -15,7 +15,7 @@ import (
 
 func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		writeJSONResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -23,7 +23,7 @@ func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
 
 	res, err := s.resourceService.GetResourceByUUID(file_uuid)
 	if err != nil || res == nil || !res.IsFile || res.DeletedAt != nil || res.IsBroken {
-		http.Error(w, "Not found", http.StatusNotFound)
+		writeJSONResponse(w, "Not found", http.StatusNotFound)
 		return
 	}
 
@@ -34,14 +34,14 @@ func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if res.APIKeyUUID != keyUUID {
-			http.Error(w, "Authorization failed", http.StatusUnauthorized)
+			writeJSONResponse(w, "Authorization failed", http.StatusUnauthorized)
 			return
 		}
 	}
 
 	resPath, err := s.resourceService.BuildResourcePath(res)
 	if err != nil {
-		http.Error(w, "Could not resolve filepath", http.StatusInternalServerError)
+		writeJSONResponse(w, "Could not resolve filepath", http.StatusInternalServerError)
 		return
 	}
 	fileExt := filepath.Ext(res.Name)
@@ -57,7 +57,7 @@ func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		_ = s.resourceService.MarkResourceAsBroken(res.UUID)
 
-		http.Error(w, "Could not read file", http.StatusInternalServerError)
+		writeJSONResponse(w, "Could not read file", http.StatusInternalServerError)
 		return
 	}
 
@@ -105,7 +105,7 @@ func (s *RESTService) renderMediaViewer(w http.ResponseWriter, rUUID string, mim
 	expiry := time.Now().Add(30 * time.Second)
 	signedURL, err := s.generateSignedURL("/raw", rUUID, expiry)
 	if err != nil {
-		http.Error(w, "Failed to generate signed URL", http.StatusInternalServerError)
+		writeJSONResponse(w, "Failed to generate signed URL", http.StatusInternalServerError)
 		return
 	}
 

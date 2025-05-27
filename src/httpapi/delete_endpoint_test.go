@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/twigman/fshare/src/config"
 	"github.com/twigman/fshare/src/httpapi"
 )
 
@@ -139,5 +140,60 @@ func TestDeleteHandler_WrongMethod(t *testing.T) {
 
 	if rr.Code != http.StatusMethodNotAllowed {
 		t.Errorf("expected %d, got %d", http.StatusMethodNotAllowed, rr.Code)
+	}
+}
+
+// should not be possible
+func TestDeleteHandler_DeleteHomeDir(t *testing.T) {
+	uploadDir := t.TempDir()
+	const apiKey = "123"
+	const keyHighlyTrusted = false
+
+	cfg := &config.Config{
+		UploadPath:      uploadDir,
+		MaxFileSizeInMB: 5,
+		Port:            8080,
+		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
+		EnvPath:         filepath.Join(uploadDir, "test.env"),
+	}
+
+	as, rs, restService, err := httpapi.InitTestServices(cfg)
+	if err != nil {
+		t.Fatalf("Test setup error: %v", err)
+	}
+
+	// add key
+	key, err := as.AddAPIKey(apiKey, "test key", keyHighlyTrusted)
+	if err != nil {
+		t.Fatalf("Error adding API key: %v", err)
+	}
+
+	// create home
+	r, err := rs.GetOrCreateHomeDir(key.HashedKey)
+	if err != nil {
+		t.Fatalf("Error creating home dir: %v", err)
+	}
+
+	// check home
+	_, err = os.Stat(filepath.Join(uploadDir, key.UUID))
+	if os.IsNotExist(err) {
+		t.Fatalf("home directory was not created")
+	}
+
+	req := httptest.NewRequest("DELETE", "/delete/"+r.UUID, nil)
+	rr := httptest.NewRecorder()
+
+	req.Header.Set("Authorization", "Bearer "+apiKey)
+
+	restService.DeleteHandler(rr, req)
+
+	if rr.Code != http.StatusForbidden {
+		t.Errorf("expected %d, got %d", http.StatusInternalServerError, rr.Code)
+	}
+
+	// check home
+	_, err = os.Stat(filepath.Join(uploadDir, key.UUID))
+	if os.IsNotExist(err) {
+		t.Fatalf("home directory was deleted")
 	}
 }

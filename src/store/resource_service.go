@@ -163,13 +163,18 @@ func (s *ResourceService) GetResourceByUUID(uuid string) (*Resource, error) {
 
 func (s *ResourceService) DeleteResourceByUUID(rUUID string, keyUUID string) error {
 	res, err := s.GetResourceByUUID(rUUID)
-	if err != nil || res == nil || !res.IsFile || res.DeletedAt != nil {
+	if err != nil || res == nil || res.DeletedAt != nil {
 		return err
 	}
 
 	// needs to be owner
 	if res.APIKeyUUID != keyUUID {
 		return fmt.Errorf("authorization error")
+	}
+
+	// detect home dir
+	if !res.IsFile && res.ParentUUID == nil {
+		return apperror.ErrDeleteHomeDirNotAllowed
 	}
 
 	resPath := filepath.Join(s.cfg.UploadPath, res.APIKeyUUID, res.Name)

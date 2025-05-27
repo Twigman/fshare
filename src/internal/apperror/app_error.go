@@ -29,8 +29,9 @@ func New(code int, key string, msg string) *FShareError {
 }
 
 var (
-	ErrInvalidFilename = &FShareError{Code: http.StatusBadRequest, Key: "invalid_filename", Msg: "Filename not allowed"}
-	ErrInvalidFilepath = &FShareError{Code: http.StatusBadRequest, Key: "invalid_filepath", Msg: "Filepath not allowed"}
-	ErrResolvePath     = &FShareError{Code: http.StatusBadRequest, Key: "invalid_filepath", Msg: "Could not resolve filepath"}
-	ErrCharsNotAllowed = &FShareError{Code: 10001, Key: "invalid_characters", Msg: "Some characters are not allowed"}
+	ErrInvalidFilename         = &FShareError{Code: http.StatusBadRequest, Key: "invalid_filename", Msg: "Filename not allowed"}
+	ErrInvalidFilepath         = &FShareError{Code: http.StatusBadRequest, Key: "invalid_filepath", Msg: "Filepath not allowed"}
+	ErrResolvePath             = &FShareError{Code: http.StatusBadRequest, Key: "invalid_filepath", Msg: "Could not resolve filepath"}
+	ErrCharsNotAllowed         = &FShareError{Code: 10001, Key: "invalid_characters", Msg: "Some characters are not allowed"}
+	ErrDeleteHomeDirNotAllowed = &FShareError{Code: 11001, Key: "unauthorized_delete_home_dir", Msg: "Deleting the home directory is not allowed"}
 )

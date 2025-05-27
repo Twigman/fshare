@@ -34,19 +34,19 @@ func NewRESTService(config *config.Config, as *store.APIKeyService, rs *store.Re
 func (s *RESTService) authorizeBearer(w http.ResponseWriter, r *http.Request) (string, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
-		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+		writeJSONResponse(w, "Missing Authorization header", http.StatusUnauthorized)
 		return "", fmt.Errorf("missing authorization")
 	}
 	const prefix = "Bearer "
 	if !strings.HasPrefix(authHeader, prefix) {
-		http.Error(w, "Invalid Authorization scheme", http.StatusUnauthorized)
+		writeJSONResponse(w, "Invalid Authorization scheme", http.StatusUnauthorized)
 		return "", fmt.Errorf("invalid scheme")
 	}
 
 	apiKey := strings.TrimPrefix(authHeader, prefix)
 	keyUUID, err := s.apiKeyService.GetUUIDForAPIKey(apiKey)
 	if err != nil || keyUUID == "" {
-		http.Error(w, "Authorization failed", http.StatusUnauthorized)
+		writeJSONResponse(w, "Authorization failed", http.StatusUnauthorized)
 		return "", fmt.Errorf("invalid api key")
 	}
 	return keyUUID, nil
@@ -104,4 +104,10 @@ func (s *RESTService) isValidSignedRequest(r *http.Request, uuid string) bool {
 	}
 
 	return true
+}
+
+func writeJSONResponse(w http.ResponseWriter, statusMsg string, statusCode int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	fmt.Fprintf(w, `{"status": %q}`, statusMsg)
 }
