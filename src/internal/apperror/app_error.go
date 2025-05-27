@@ -32,4 +32,5 @@ var (
 	ErrInvalidFilename = &FShareError{Code: http.StatusBadRequest, Key: "invalid_filename", Msg: "Filename not allowed"}
 	ErrInvalidFilepath = &FShareError{Code: http.StatusBadRequest, Key: "invalid_filepath", Msg: "Filepath not allowed"}
 	ErrResolvePath     = &FShareError{Code: http.StatusBadRequest, Key: "invalid_filepath", Msg: "Could not resolve filepath"}
+	ErrCharsNotAllowed = &FShareError{Code: 10001, Key: "invalid_characters", Msg: "Some characters are not allowed"}
 )

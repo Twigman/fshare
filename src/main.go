@@ -68,7 +68,7 @@ func main() {
 		log.Printf("Created home dir: %s\n", filepath.Join(cfg.UploadPath, r.Name))
 	}
 
-	if ok, _ := as.AnyAPIKeyExists(); !ok {
+	if !as.AnyAPIKeyExists() {
 		log.Fatalf("No API key exists. Please provide an API key when starting the service by using the parameters --api-key and --comment.")
 	}
 
