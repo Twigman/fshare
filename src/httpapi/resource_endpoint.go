@@ -68,57 +68,7 @@ func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if isRenderableTextFile(fileExt, keyIsHighlyTrusted) {
-		nonce := generateNonce()
-
-		w.Header().Set("Content-Type", "text/html; charset=utf-8")
-		w.Header().Set("Content-Security-Policy", fmt.Sprintf(
-			"default-src 'none'; script-src https://cdnjs.cloudflare.com 'nonce-%s'; style-src https://cdnjs.cloudflare.com 'nonce-%s'; img-src 'self'; object-src 'none'; base-uri 'none';",
-			nonce, nonce,
-		))
-
-		fmt.Fprintf(w, `
-		<!DOCTYPE html>
-		<html lang="en">
-		<head>
-		<meta charset="utf-8">
-		<title>Viewer</title>
-		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
-		<style nonce="%s">
-			body {
-			margin: 0;
-			background-color: #0d1117;
-			color: #c9d1d9;
-			font-family: monospace;
-			}
-
-			pre {
-			margin: 0;
-			padding: 1em;
-			background: #0d1117;
-			box-shadow: none;
-			border: none;
-			overflow-x: auto;
-			}
-
-			code {
-			background: none;
-			color: inherit;
-			}
-		</style>
-		<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
-		<script nonce="%s">
-			window.addEventListener('DOMContentLoaded', function () {
-			document.querySelectorAll('pre code').forEach(function (el) {
-				hljs.highlightElement(el);
-			});
-			});
-		</script>
-		</head>
-		<body>
-		<pre><code class="language-%s">%s</code></pre>
-		</body>
-		</html>
-		`, nonce, nonce, getLangClass(fileExt, keyIsHighlyTrusted), html.EscapeString(string(content)))
+		renderText(w, getLangClass(fileExt, keyIsHighlyTrusted), string(content))
 	} else if isRenderableImageFile(fileExt, keyIsHighlyTrusted) {
 		// present images in browser
 		if strings.HasPrefix(mimeType, "image/") {
@@ -130,7 +80,6 @@ func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
 	} else if keyIsHighlyTrusted && isBrowserRenderableFile(fileExt) {
 		s.renderMediaViewer(w, res.UUID, mimeType)
 		return
-
 	} else {
 		// force download
 		w.Header().Set("Content-Type", "application/octet-stream")
@@ -178,4 +127,57 @@ func (s *RESTService) renderMediaViewer(w http.ResponseWriter, rUUID string, mim
 	<body style="margin:0; background:#111; color:#fff; display:flex; align-items:center; justify-content:center; height:100vh;">
 	%s
 	</body></html>`, embed)
+}
+
+func renderText(w http.ResponseWriter, langClass string, content string) {
+	nonce := generateNonce()
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Security-Policy", fmt.Sprintf(
+		"default-src 'none'; script-src https://cdnjs.cloudflare.com 'nonce-%s'; style-src https://cdnjs.cloudflare.com 'nonce-%s'; img-src 'self'; object-src 'none'; base-uri 'none';",
+		nonce, nonce,
+	))
+
+	fmt.Fprintf(w, `
+		<!DOCTYPE html>
+		<html lang="en">
+		<head>
+		<meta charset="utf-8">
+		<title>Viewer</title>
+		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+		<style nonce="%s">
+			body {
+			margin: 0;
+			background-color: #0d1117;
+			color: #c9d1d9;
+			font-family: monospace;
+			}
+
+			pre {
+			margin: 0;
+			padding: 1em;
+			background: #0d1117;
+			box-shadow: none;
+			border: none;
+			overflow-x: auto;
+			}
+
+			code {
+			background: none;
+			color: inherit;
+			}
+		</style>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" defer></script>
+		<script nonce="%s">
+			window.addEventListener('DOMContentLoaded', function () {
+			document.querySelectorAll('pre code').forEach(function (el) {
+				hljs.highlightElement(el);
+			});
+			});
+		</script>
+		</head>
+		<body>
+		<pre><code class="language-%s">%s</code></pre>
+		</body>
+		</html>
+		`, nonce, nonce, langClass, html.EscapeString(content))
 }
