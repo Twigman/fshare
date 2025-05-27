@@ -168,12 +168,6 @@ func (s *RESTService) renderMediaViewer(w http.ResponseWriter, rUUID string, mim
 		embed = fmt.Sprintf(`<iframe src="%s" width="100%%" height="100%%" style="border:none;"></iframe>`, escapedPath)
 	case strings.HasPrefix(mimeType, "image/svg"):
 		embed = fmt.Sprintf(`<img src="%s" style="max-width:100%%; max-height:100%%;">`, escapedPath)
-	/*
-		case strings.HasPrefix(mimeType, "video/"):
-			embed = fmt.Sprintf(`<video src="%s" controls autoplay style="max-width:100%%; height:auto;"></video>`, escapedPath)
-		case strings.HasPrefix(mimeType, "audio/"):
-			embed = fmt.Sprintf(`<audio src="%s" controls autoplay></audio>`, escapedPath)
-	*/
 	default:
 		http.Error(w, "Unsupported viewer", http.StatusUnsupportedMediaType)
 		return
