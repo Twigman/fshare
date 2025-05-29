@@ -30,6 +30,10 @@ func (s *RESTService) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 		} else if err == apperror.ErrResourceNotFound {
 			writeJSONResponse(w, "Resource not found", http.StatusNotFound)
 			return
+		} else if err == apperror.AuthorizationError {
+			// should not occur, as it is validated beforehand
+			writeJSONResponse(w, "Unauthorized", apperror.AuthorizationError.Code)
+			return
 		} else {
 			writeJSONResponse(w, "Delete failed", http.StatusInternalServerError)
 			return

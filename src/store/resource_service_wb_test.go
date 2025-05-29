@@ -50,10 +50,10 @@ func TestFileService_SaveUploadedFile(t *testing.T) {
 	}
 
 	res := &Resource{
-		Name:              testFilename,
-		IsPrivate:         true,
-		APIKeyUUID:        key.UUID,
-		AutoDeleteInHours: 0,
+		Name:         testFilename,
+		IsPrivate:    true,
+		APIKeyUUID:   key.UUID,
+		AutoDeleteAt: nil,
 	}
 
 	// create dir
@@ -166,10 +166,10 @@ func TestFileService_SaveUploadedFileMultipleTimes(t *testing.T) {
 	}
 
 	res := &Resource{
-		Name:              testFilename,
-		IsPrivate:         true,
-		APIKeyUUID:        key.UUID,
-		AutoDeleteInHours: 0,
+		Name:         testFilename,
+		IsPrivate:    true,
+		APIKeyUUID:   key.UUID,
+		AutoDeleteAt: nil,
 	}
 
 	counter := 15

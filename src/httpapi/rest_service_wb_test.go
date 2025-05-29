@@ -55,10 +55,10 @@ func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, i
 	file := &fake.FakeMultipartFile{Reader: bytes.NewReader(content)}
 
 	r := &store.Resource{
-		Name:              filename,
-		IsPrivate:         isPrivate,
-		APIKeyUUID:        key.UUID,
-		AutoDeleteInHours: 0,
+		Name:         filename,
+		IsPrivate:    isPrivate,
+		APIKeyUUID:   key.UUID,
+		AutoDeleteAt: nil,
 	}
 
 	fileUUID, err := rs.SaveUploadedFile(file, r, false)

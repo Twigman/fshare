@@ -115,8 +115,8 @@ func TestDeleteHandler_NoExistingUUID(t *testing.T) {
 
 	restService.DeleteHandler(rr, req)
 
-	if rr.Code != http.StatusInternalServerError {
-		t.Errorf("expected %d, got %d", http.StatusInternalServerError, rr.Code)
+	if rr.Code != http.StatusNotFound {
+		t.Errorf("expected %d, got %d", http.StatusNotFound, rr.Code)
 	}
 }
 

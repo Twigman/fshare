@@ -158,15 +158,15 @@ func (s *ResourceService) GetOrCreateHomeDir(hashed_key string) (*Resource, erro
 		}
 
 		r = &Resource{
-			UUID:              home_uuid.String(),
-			Name:              key.UUID,
-			IsPrivate:         true,
-			IsFile:            false,
-			ParentUUID:        nil,
-			APIKeyUUID:        key.UUID,
-			AutoDeleteInHours: 0,
-			CreatedAt:         time.Now().UTC(),
-			DeletedAt:         nil,
+			UUID:         home_uuid.String(),
+			Name:         key.UUID,
+			IsPrivate:    true,
+			IsFile:       false,
+			ParentUUID:   nil,
+			APIKeyUUID:   key.UUID,
+			AutoDeleteAt: nil,
+			CreatedAt:    time.Now().UTC(),
+			DeletedAt:    nil,
 		}
 
 		err = s.db.insertResource(r)
@@ -188,7 +188,7 @@ func (s *ResourceService) GetResourceByUUID(uuid string) (*Resource, error) {
 		return nil, err
 	}
 	if r == nil {
-		return nil, fmt.Errorf("resource not found")
+		return nil, apperror.ErrResourceNotFound
 	}
 	return r, nil
 }
@@ -201,7 +201,7 @@ func (s *ResourceService) DeleteResourceByUUID(rUUID string, keyUUID string) err
 
 	// needs to be owner
 	if res.APIKeyUUID != keyUUID {
-		return fmt.Errorf("authorization error")
+		return apperror.AuthorizationError
 	}
 
 	if res == nil {
@@ -248,3 +248,53 @@ func (s *ResourceService) MarkResourceAsBroken(rUUID string) error {
 	}
 	return nil
 }
+
+/*
+func (s *ResourceService) StartCleanupWorker(interval time.Duration, stopCh <-chan struct{}) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			err := s.cleanupExpiredFiles()
+			if err != nil {
+				log.Printf("Error cleaning up files: %v", err)
+			}
+		case <-stopCh:
+			log.Println("Cleanup worker stopped")
+			return
+		}
+	}
+}
+
+func (s *ResourceService) cleanupExpiredFiles() error {
+	now := time.Now().UTC()
+
+	files, err := s.db.GetFilesForDeletion(now)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		path, err := s.BuildResourcePath(file)
+		if err != nil {
+			log.Printf("Skipping file %s: %v", file.UUID, err)
+			continue
+		}
+
+		if err := os.Remove(path); err != nil {
+			log.Printf("Failed to delete file %s: %v", path, err)
+			continue
+		}
+
+		t := time.Now().UTC()
+		file.DeletedAt = &t
+		if err := s.db.updateResource(file); err != nil {
+			log.Printf("Failed to mark file %s as deleted: %v", file.UUID, err)
+		}
+	}
+
+	return nil
+}
+*/

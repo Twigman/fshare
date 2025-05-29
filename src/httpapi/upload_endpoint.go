@@ -3,7 +3,6 @@ package httpapi
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/twigman/fshare/src/internal/apperror"
 	"github.com/twigman/fshare/src/store"
@@ -45,18 +44,20 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 	// read fields
 	isPrivate := r.FormValue("is_private") == "true"
-	autoDelInH := r.FormValue("auto_del_in_h")
+	/*
+		autoDelInH := r.FormValue("auto_del_in_h")
 
-	i, err := strconv.Atoi(autoDelInH)
-	if err != nil {
-		i = 24
-	}
+		i, err := strconv.Atoi(autoDelInH)
+		if err != nil {
+			i = 24
+		}
+	*/
 
 	res := &store.Resource{
-		Name:              header.Filename,
-		IsPrivate:         isPrivate,
-		APIKeyUUID:        keyUUID,
-		AutoDeleteInHours: i,
+		Name:         header.Filename,
+		IsPrivate:    isPrivate,
+		APIKeyUUID:   keyUUID,
+		AutoDeleteAt: nil,
 	}
 
 	file_uuid, err := s.resourceService.SaveUploadedFile(file, res, true)
