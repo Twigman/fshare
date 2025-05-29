@@ -106,7 +106,7 @@ curl -X DELETE http://localhost:8080/delete/0196af20-4ca0-7e02-9441-dfd94cd75b39
 
 ## 🔑 API-Key Management Endpoint
 
-### POST /api-key
+### POST /apikey
 
 Create a new API key. Requires a valid **highly trusted** API key for authorization.
 
@@ -121,32 +121,33 @@ Create a new API key. Requires a valid **highly trusted** API key for authorizat
 
 | Field            | Type    | Required | Description                                          | Example             |
 |------------------|---------|----------|------------------------------------------------------|---------------------|
-| `key`            | string  | ✅       | The API key value to create                          | `my-new-api-key`    |
+| `key`            | string  | ✅       | The API key value to create                          | `new-api-key`    |
 | `comment`        | string  | ❌       | Optional comment for the API key                      | `test key`          |
 | `highly_trusted` | boolean | ❌       | Whether the key should have elevated privileges       | `false`             |
+
+
+#### Example Request (cURL)
+
+```bash
+curl -X POST http://localhost:8080/apikey \
+     -H "Authorization: Bearer <trusted-api-key>" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "key": "new-api-key",
+           "comment": "description",
+           "highly_trusted": false
+         }'
+```
 
 #### Response (201 Created)
 
 ```json
 {
   "uuid": "9b8a71c2-1234-4567-8910-abcdef123456",
-  "comment": "optional description",
+  "comment": "description",
   "highly_trusted": false,
-  "created_at": "2024-05-27T12:34:56Z"
+  "created_at": "2025-05-27T12:34:56Z"
 }
-```
-
-#### Example Request (cURL)
-
-```bash
-curl -X POST http://localhost:8080/api-key \
-     -H "Authorization: Bearer <trusted-api-key>" \
-     -H "Content-Type: application/json" \
-     -d '{
-           "key": "my-new-api-key",
-           "comment": "optional description",
-           "highly_trusted": false
-         }'
 ```
 
 ---
