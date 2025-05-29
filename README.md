@@ -99,7 +99,7 @@ The application can be configured using a JSON file. Below is a description of a
 | `upload_path`           | string | Local directory where uploaded files are stored (must exist)                |
 | `max_file_size_in_mb`   | int    | Maximum allowed size per file upload, in megabytes                          |
 | `sqlite_db_path`        | string | Path to the SQLite database file used to store resources and API keys       |
-| `space_per_user_in_mb`  | int    | *(currently unused)* Planned per-user upload limit (in MB)                  |
+| `autodelete_interval_in_sec`  | int    | Interval (in seconds) at which expired files (past their TTL) are automatically deleted            |
 
 ## 🏁 Command-Line Flags
 
