@@ -20,7 +20,7 @@ func initServices(cfg *config.Config) (*ResourceService, *APIKey, error) {
 	rs := NewResourceService(cfg, db)
 	as := NewAPIKeyService(db)
 
-	key, err := as.AddAPIKey("123", "123", false)
+	key, err := as.AddAPIKey("123", "123", false, nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -215,7 +215,7 @@ func TestCleanupExpiredFiles(t *testing.T) {
 	as := NewAPIKeyService(db)
 
 	apiKey := "test-key"
-	key, err := as.AddAPIKey(apiKey, "test", false)
+	key, err := as.AddAPIKey(apiKey, "test", false, nil)
 	if err != nil {
 		t.Fatalf("failed to add api key: %v", err)
 	}

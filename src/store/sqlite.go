@@ -41,7 +41,8 @@ func (s *SQLite) init() error {
 		comment TEXT,
 		is_highly_trusted BOOLEAN,
 		created_at DATETIME,
-		created_by TEXT
+		created_by TEXT,
+		FOREIGN KEY (created_by) REFERENCES api_key(uuid) ON DELETE SET NULL
 	);
 
 	CREATE TABLE IF NOT EXISTS resource (

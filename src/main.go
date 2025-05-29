@@ -57,7 +57,7 @@ func main() {
 
 	// add api-key if provided
 	if *flagAPIKey != "" {
-		key, err := as.AddAPIKey(*flagAPIKey, *flagComment, *flagHighlyTrusted)
+		key, err := as.AddAPIKey(*flagAPIKey, *flagComment, *flagHighlyTrusted, nil)
 		if err != nil {
 			log.Fatalf("Error saving initial API key: %v", err)
 		}
@@ -94,6 +94,7 @@ func startServer(cfg *config.Config, as *store.APIKeyService, rs *store.Resource
 	mux.HandleFunc("/r/", restService.ResourceHandler)
 	mux.HandleFunc("/delete/", restService.DeleteHandler)
 	mux.HandleFunc("/raw/", restService.RawResourceHandler)
+	mux.HandleFunc("/apikey", restService.CreateAPIKeyHandler)
 
 	// start cleanup worker for autodelete
 	stopCh := make(chan struct{})

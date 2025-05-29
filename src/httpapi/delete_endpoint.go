@@ -9,7 +9,7 @@ import (
 
 func (s *RESTService) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		writeJSONResponse(w, "Method not allowed", http.StatusMethodNotAllowed)
+		writeJSONStatus(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -22,20 +22,20 @@ func (s *RESTService) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	err = s.resourceService.DeleteResourceByUUID(rUUID, keyUUID)
 	if err != nil {
 		if err == apperror.ErrDeleteHomeDirNotAllowed {
-			writeJSONResponse(w, "No permission to delete this object", http.StatusForbidden)
+			writeJSONStatus(w, http.StatusForbidden, "No permission to delete this object")
 			return
 		} else if err == apperror.ErrFileAlreadyDeleted {
-			writeJSONResponse(w, "Resource not found", http.StatusNotFound)
+			writeJSONStatus(w, http.StatusNotFound, "Resource not found")
 			return
 		} else if err == apperror.ErrResourceNotFound {
-			writeJSONResponse(w, "Resource not found", http.StatusNotFound)
+			writeJSONStatus(w, http.StatusNotFound, "Resource not found")
 			return
 		} else if err == apperror.AuthorizationError {
 			// should not occur, as it is validated beforehand
-			writeJSONResponse(w, "Unauthorized", apperror.AuthorizationError.Code)
+			writeJSONStatus(w, apperror.AuthorizationError.Code, "Unauthorized")
 			return
 		} else {
-			writeJSONResponse(w, "Delete failed", http.StatusInternalServerError)
+			writeJSONStatus(w, http.StatusInternalServerError, "Delete failed")
 			return
 		}
 	}

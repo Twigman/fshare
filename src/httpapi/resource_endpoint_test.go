@@ -81,7 +81,7 @@ func TestResourceHandler_PrivateWrongKey(t *testing.T) {
 	}
 
 	// add second key
-	_, err = as.AddAPIKey("321", "second", true)
+	_, err = as.AddAPIKey("321", "second", true, nil)
 	if err != nil {
 		t.Fatalf("could not add second API key: %v", err)
 	}

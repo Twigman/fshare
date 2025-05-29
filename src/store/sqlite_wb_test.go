@@ -17,7 +17,7 @@ func TestFindFilesForDeletion(t *testing.T) {
 
 	// prepare testdata
 	// add apikey
-	key, err := as.AddAPIKey("123", "test", false)
+	key, err := as.AddAPIKey("123", "test", false, nil)
 	if err != nil {
 		t.Fatalf("error creating apikey: %v", err)
 	}

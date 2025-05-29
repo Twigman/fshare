@@ -32,7 +32,7 @@ func TestUploadHandler_Success(t *testing.T) {
 	}
 
 	const apiKey = "123"
-	key, err := as.AddAPIKey(apiKey, "test key", false)
+	key, err := as.AddAPIKey(apiKey, "test key", false, nil)
 	if err != nil {
 		t.Fatalf("Can not add API key: %v", err)
 	}
@@ -155,7 +155,7 @@ func TestUploadHandler_TooLarge(t *testing.T) {
 	}
 
 	const apiKey = "123"
-	_, err = as.AddAPIKey(apiKey, "test key", false)
+	_, err = as.AddAPIKey(apiKey, "test key", false, nil)
 	if err != nil {
 		t.Fatalf("Can not add API key: %v", err)
 	}
@@ -210,7 +210,7 @@ func TestUploadHandler_MissingFileField(t *testing.T) {
 	}
 
 	const apiKey = "123"
-	_, err = as.AddAPIKey(apiKey, "test key", false)
+	_, err = as.AddAPIKey(apiKey, "test key", false, nil)
 	if err != nil {
 		t.Fatalf("Can not add API key: %v", err)
 	}
@@ -279,7 +279,7 @@ func TestUploadHandler_UnregisteredAPIKeyHeader(t *testing.T) {
 	}
 
 	const apiKey = "123"
-	_, err = as.AddAPIKey(apiKey, "test key", false)
+	_, err = as.AddAPIKey(apiKey, "test key", false, nil)
 	if err != nil {
 		t.Fatalf("Can not add API key: %v", err)
 	}
@@ -343,7 +343,7 @@ func TestUploadHandler_HiddenFile(t *testing.T) {
 	}
 
 	const apiKey = "123"
-	key, err := as.AddAPIKey(apiKey, "test key", false)
+	key, err := as.AddAPIKey(apiKey, "test key", false, nil)
 	if err != nil {
 		t.Fatalf("Can not add API key: %v", err)
 	}
@@ -409,7 +409,7 @@ func TestUploadHandler_InvalidFilename_1(t *testing.T) {
 	}
 
 	const apiKey = "123"
-	key, err := as.AddAPIKey(apiKey, "test key", false)
+	key, err := as.AddAPIKey(apiKey, "test key", false, nil)
 	if err != nil {
 		t.Fatalf("Can not add API key: %v", err)
 	}

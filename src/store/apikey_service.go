@@ -21,7 +21,7 @@ func NewAPIKeyService(db *SQLite) *APIKeyService {
 	return &APIKeyService{db: db}
 }
 
-func (a *APIKeyService) AddAPIKey(apiKey string, comment string, isHighlyTrusted bool) (*APIKey, error) {
+func (a *APIKeyService) AddAPIKey(apiKey string, comment string, isHighlyTrusted bool, createdBy *string) (*APIKey, error) {
 	key_uuid, err := uuid.NewV7()
 	if err != nil {
 		return nil, fmt.Errorf("UUID generation error: %v", err)
@@ -38,6 +38,7 @@ func (a *APIKeyService) AddAPIKey(apiKey string, comment string, isHighlyTrusted
 		Comment:         comment,
 		IsHighlyTrusted: isHighlyTrusted,
 		CreatedAt:       time.Now().UTC(),
+		CreatedBy:       createdBy,
 	}
 
 	err = a.db.insertAPIKey(key)

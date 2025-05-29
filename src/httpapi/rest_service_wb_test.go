@@ -41,7 +41,7 @@ func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, i
 		return nil, nil, nil, nil, "", err
 	}
 
-	key, err := as.AddAPIKey(apiKey, "test key", keyHighlyTrusted)
+	key, err := as.AddAPIKey(apiKey, "test key", keyHighlyTrusted, nil)
 	if err != nil {
 		return nil, nil, nil, nil, "", err
 	}

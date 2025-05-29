@@ -163,7 +163,7 @@ func TestDeleteHandler_DeleteHomeDir(t *testing.T) {
 	}
 
 	// add key
-	key, err := as.AddAPIKey(apiKey, "test key", keyHighlyTrusted)
+	key, err := as.AddAPIKey(apiKey, "test key", keyHighlyTrusted, nil)
 	if err != nil {
 		t.Fatalf("Error adding API key: %v", err)
 	}
