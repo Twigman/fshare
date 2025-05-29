@@ -7,7 +7,7 @@ A lightweight RESTful service to upload, share, view and delete files via UUID-b
 - Simple REST API for file sharing
 - API key–based user isolation
 - Each API key gets a dedicated "home" folder
-- Uploaded files are stored under `/<upload>/<apikey-uuid>/filename`
+- Uploaded files are stored under `/<upload-folder>/<apikey-uuid>/filename`
 - File preview with syntax highlighting (for code/text files)
 - Configurable time to live (TTL) for every uploaded file
 
