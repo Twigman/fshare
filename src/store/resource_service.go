@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"os"
 	"path/filepath"
@@ -249,7 +250,6 @@ func (s *ResourceService) MarkResourceAsBroken(rUUID string) error {
 	return nil
 }
 
-/*
 func (s *ResourceService) StartCleanupWorker(interval time.Duration, stopCh <-chan struct{}) {
 	ticker := time.NewTicker(interval)
 	defer ticker.Stop()
@@ -269,12 +269,15 @@ func (s *ResourceService) StartCleanupWorker(interval time.Duration, stopCh <-ch
 }
 
 func (s *ResourceService) cleanupExpiredFiles() error {
+	log.Printf("Cleaning up expired files...")
 	now := time.Now().UTC()
 
-	files, err := s.db.GetFilesForDeletion(now)
+	files, err := s.db.findFilesForDeletion(now)
 	if err != nil {
 		return err
 	}
+
+	counter := 0
 
 	for _, file := range files {
 		path, err := s.BuildResourcePath(file)
@@ -292,9 +295,11 @@ func (s *ResourceService) cleanupExpiredFiles() error {
 		file.DeletedAt = &t
 		if err := s.db.updateResource(file); err != nil {
 			log.Printf("Failed to mark file %s as deleted: %v", file.UUID, err)
+			continue
 		}
-	}
 
+		counter++
+	}
+	log.Printf("Deleted %d out of %d files", counter, len(files))
 	return nil
 }
-*/

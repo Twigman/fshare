@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"path/filepath"
+	"time"
 
 	"github.com/twigman/fshare/src/config"
 	"github.com/twigman/fshare/src/httpapi"
@@ -91,6 +94,20 @@ func startServer(cfg *config.Config, as *store.APIKeyService, rs *store.Resource
 	mux.HandleFunc("/r/", restService.ResourceHandler)
 	mux.HandleFunc("/delete/", restService.DeleteHandler)
 	mux.HandleFunc("/raw/", restService.RawResourceHandler)
+
+	// start cleanup worker for autodelete
+	stopCh := make(chan struct{})
+	go rs.StartCleanupWorker(time.Duration(cfg.AutoDeleteIntervalInSec)*time.Second, stopCh)
+
+	// handle graceful shutdown
+	signalCh := make(chan os.Signal, 1)
+	signal.Notify(signalCh, os.Interrupt, os.Kill)
+	go func() {
+		<-signalCh
+		log.Println("Shutdown signal received, stopping cleanup worker...")
+		close(stopCh)
+		os.Exit(0)
+	}()
 
 	return http.ListenAndServe(addr, mux)
 }

@@ -15,6 +15,7 @@ type Config struct {
 	EnvPath                  string `json:"env_path"`
 	ContinuousFileValidation bool   `json:"continuous_file_validation"`
 	SpacePerUserInMB         int    `json:"space_per_user_in_mb"`
+	AutoDeleteIntervalInSec  int    `json:"autodelete_interval_in_sec"`
 	//MaxFolderDepth           int    `json:"max_folder_depth"`
 }
 
