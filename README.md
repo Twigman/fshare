@@ -85,6 +85,7 @@ curl -X DELETE http://localhost:8080/delete/0196af20-4ca0-7e02-9441-dfd94cd75b39
      -H "Authorization: Bearer 123"
 ```
 
+
 ## 📥 Upload Endpoint Parameters
 
 ### Request Headers
@@ -100,6 +101,53 @@ curl -X DELETE http://localhost:8080/delete/0196af20-4ca0-7e02-9441-dfd94cd75b39
 | `file`         | file    | ✅       | The file to upload.                                                                                                                                   | `myfile.txt`    |
 | `is_private`   | boolean | ❌       | Whether the file is private. Accepts `true` or `false`. Defaults to `false`.                                                                          | `true`          |
 | `auto_del_in`  | string  | ❌       | Time to live (TTL) for the file. Can be a duration (e.g., `24h`, `30m`) or days (e.g., `2d`). If omitted, the file does not expire automatically.     | `2d`, `24h`, `30m` |
+
+---
+
+## 🔑 API-Key Management Endpoint
+
+### POST /api-key
+
+Create a new API key. Requires a valid **highly trusted** API key for authorization.
+
+#### Request Headers
+
+| Header          | Type    | Required | Description                          |
+|-----------------|---------|----------|--------------------------------------|
+| `Authorization` | string  | ✅       | Bearer token (`Bearer <API-Key>`)    |
+| `Content-Type`  | string  | ✅       | Must be `application/json`           |
+
+#### Request JSON Body
+
+| Field            | Type    | Required | Description                                          | Example             |
+|------------------|---------|----------|------------------------------------------------------|---------------------|
+| `key`            | string  | ✅       | The API key value to create                          | `my-new-api-key`    |
+| `comment`        | string  | ❌       | Optional comment for the API key                      | `test key`          |
+| `highly_trusted` | boolean | ❌       | Whether the key should have elevated privileges       | `false`             |
+
+#### Response (201 Created)
+
+```json
+{
+  "uuid": "9b8a71c2-1234-4567-8910-abcdef123456",
+  "comment": "optional description",
+  "highly_trusted": false,
+  "created_at": "2024-05-27T12:34:56Z"
+}
+```
+
+#### Example Request (cURL)
+
+```bash
+curl -X POST http://localhost:8080/api-key \
+     -H "Authorization: Bearer <trusted-api-key>" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "key": "my-new-api-key",
+           "comment": "optional description",
+           "highly_trusted": false
+         }'
+```
 
 ---
 
