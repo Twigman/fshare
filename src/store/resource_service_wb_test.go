@@ -33,11 +33,10 @@ func TestFileService_SaveUploadedFile(t *testing.T) {
 	const testFilename = "test.txt"
 
 	cfg := &config.Config{
-		UploadPath:               uploadDir,
-		MaxFileSizeInMB:          2,
-		Port:                     8080,
-		SQLitePath:               filepath.Join(uploadDir, "test_db.sqlite"),
-		ContinuousFileValidation: false,
+		UploadPath:      uploadDir,
+		MaxFileSizeInMB: 2,
+		Port:            8080,
+		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
 	}
 
 	// Testfile
@@ -200,5 +199,107 @@ func TestFileService_SaveUploadedFileMultipleTimes(t *testing.T) {
 		if !bytes.Equal(data, content) {
 			t.Errorf("Wrong file content.\nGot:  %q\nWant: %q", data, content)
 		}
+	}
+}
+
+func TestCleanupExpiredFiles(t *testing.T) {
+	uploadDir := t.TempDir()
+	dbPath := filepath.Join(uploadDir, "test_db.sqlite")
+	db, err := NewDB(dbPath)
+	if err != nil {
+		t.Fatalf("failed to create db: %v", err)
+	}
+
+	cfg := &config.Config{UploadPath: uploadDir}
+	rs := NewResourceService(cfg, db)
+	as := NewAPIKeyService(db)
+
+	apiKey := "test-key"
+	key, err := as.AddAPIKey(apiKey, "test", false)
+	if err != nil {
+		t.Fatalf("failed to add api key: %v", err)
+	}
+
+	now := time.Now().UTC()
+	past := now.Add(-1 * time.Hour)
+	future := now.Add(1 * time.Hour)
+
+	tests := []struct {
+		name          string
+		resource      *Resource
+		expectDeleted bool
+	}{
+		{
+			name: "expired file",
+			resource: &Resource{
+				UUID:         "res-123",
+				Name:         "old.txt",
+				IsFile:       true,
+				APIKeyUUID:   key.UUID,
+				AutoDeleteAt: &past,
+				CreatedAt:    now,
+			},
+			expectDeleted: true,
+		},
+		{
+			name: "non-expired file",
+			resource: &Resource{
+				UUID:         "res-321",
+				Name:         "future.txt",
+				IsFile:       true,
+				APIKeyUUID:   key.UUID,
+				AutoDeleteAt: &future,
+				CreatedAt:    now,
+			},
+			expectDeleted: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Insert resource into DB
+			if err := db.insertResource(tt.resource); err != nil {
+				t.Fatalf("failed to insert resource: %v", err)
+			}
+
+			// Create file
+			homeDir := filepath.Join(uploadDir, key.UUID)
+			_ = os.MkdirAll(homeDir, 0o755)
+			testFile := filepath.Join(homeDir, tt.resource.Name)
+			os.WriteFile(testFile, []byte("test"), 0o644)
+
+			// Run cleanup
+			err := rs.cleanupExpiredFiles()
+			if err != nil {
+				t.Fatalf("cleanup error: %v", err)
+			}
+
+			// Check file existence
+			_, err = os.Stat(testFile)
+			if tt.expectDeleted {
+				if !os.IsNotExist(err) {
+					t.Errorf("expected file to be deleted, but it still exists")
+				}
+			} else {
+				if err != nil {
+					t.Errorf("expected file to exist, but got error: %v", err)
+				}
+			}
+
+			// Check DB state
+			updated, err := db.findResourceByUUID(tt.resource.UUID)
+			if err != nil {
+				t.Fatalf("db lookup error: %v", err)
+			}
+			if tt.expectDeleted {
+				if updated.DeletedAt == nil {
+					t.Errorf("expected resource to be marked as deleted")
+				}
+			} else {
+				if updated.DeletedAt != nil {
+					t.Errorf("expected resource not to be marked as deleted")
+				}
+			}
+		})
 	}
 }

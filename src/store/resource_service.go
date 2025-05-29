@@ -269,15 +269,12 @@ func (s *ResourceService) StartCleanupWorker(interval time.Duration, stopCh <-ch
 }
 
 func (s *ResourceService) cleanupExpiredFiles() error {
-	log.Printf("Cleaning up expired files...")
 	now := time.Now().UTC()
 
 	files, err := s.db.findFilesForDeletion(now)
 	if err != nil {
 		return err
 	}
-
-	counter := 0
 
 	for _, file := range files {
 		path, err := s.BuildResourcePath(file)
@@ -297,9 +294,6 @@ func (s *ResourceService) cleanupExpiredFiles() error {
 			log.Printf("Failed to mark file %s as deleted: %v", file.UUID, err)
 			continue
 		}
-
-		counter++
 	}
-	log.Printf("Deleted %d out of %d files", counter, len(files))
 	return nil
 }

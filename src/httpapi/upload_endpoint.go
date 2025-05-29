@@ -3,6 +3,9 @@ package httpapi
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
+	"strings"
+	"time"
 
 	"github.com/twigman/fshare/src/internal/apperror"
 	"github.com/twigman/fshare/src/store"
@@ -44,20 +47,38 @@ func (s *RESTService) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 	// read fields
 	isPrivate := r.FormValue("is_private") == "true"
-	/*
-		autoDelInH := r.FormValue("auto_del_in_h")
 
-		i, err := strconv.Atoi(autoDelInH)
-		if err != nil {
-			i = 24
+	// handle TTL
+	autoDelInRaw := r.FormValue("auto_del_in")
+	var autoDeleteTime time.Time
+	var autoDeleteAt *time.Time
+
+	if autoDelInRaw == "" {
+		autoDeleteAt = nil // default no auto delete
+	} else if strings.HasSuffix(autoDelInRaw, "d") {
+		daysStr := strings.TrimSuffix(autoDelInRaw, "d")
+		days, err := strconv.Atoi(daysStr)
+		if err != nil || days < 0 {
+			autoDeleteTime = time.Now().Add(24 * time.Hour).UTC() // fallback
+			autoDeleteAt = &autoDeleteTime
+		} else {
+			autoDeleteTime = time.Now().Add(time.Duration(days) * 24 * time.Hour).UTC()
+			autoDeleteAt = &autoDeleteTime
 		}
-	*/
+	} else {
+		autoDeleteDur, err := time.ParseDuration(autoDelInRaw)
+		if err != nil || autoDeleteDur < 0 {
+			autoDeleteDur = 24 * time.Hour // fallback
+		}
+		autoDeleteTime = time.Now().Add(autoDeleteDur).UTC()
+		autoDeleteAt = &autoDeleteTime
+	}
 
 	res := &store.Resource{
 		Name:         header.Filename,
 		IsPrivate:    isPrivate,
 		APIKeyUUID:   keyUUID,
-		AutoDeleteAt: nil,
+		AutoDeleteAt: autoDeleteAt,
 	}
 
 	file_uuid, err := s.resourceService.SaveUploadedFile(file, res, true)
