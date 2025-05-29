@@ -85,13 +85,29 @@ curl -X DELETE http://localhost:8080/delete/0196af20-4ca0-7e02-9441-dfd94cd75b39
      -H "Authorization: Bearer 123"
 ```
 
+## 📥 Upload Endpoint Parameters
+
+### Request Headers
+
+| Header          | Type    | Required | Description                          |
+|-----------------|---------|----------|--------------------------------------|
+| `Authorization` | string  | ✅       | Bearer token (`Bearer <API-Key>`)    |
+
+### Form Data (`multipart/form-data`)
+
+| Field          | Type    | Required | Description                                                                                                                                           | Example         |
+|----------------|---------|----------|-------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
+| `file`         | file    | ✅       | The file to upload.                                                                                                                                   | `myfile.txt`    |
+| `is_private`   | boolean | ❌       | Whether the file is private. Accepts `true` or `false`. Defaults to `false`.                                                                          | `true`          |
+| `auto_del_in`  | string  | ❌       | Time to live (TTL) for the file. Can be a duration (e.g., `24h`, `30m`) or days (e.g., `2d`). If omitted, the file does not expire automatically.     | `2d`, `24h`, `30m` |
+
 ---
 
 ## ⚙️ Configuration
 
 The application can be configured using a JSON file. Below is a description of all available configuration fields.
 
-## Configuration Fields
+## Configuration Fields (config.json)
 
 | Field                   | Type   | Description                                                                 |
 |-------------------------|--------|-----------------------------------------------------------------------------|
@@ -119,4 +135,4 @@ In addition to configuration via file, the application also needs command-line f
 - `--config` must always be provided; the application will not start without it.
 - If `--api-key` is provided, the system will attempt to create a new key on startup.
 - `--comment` and `--highly-trusted` are only relevant when `--api-key` is used.
-- Files uploaded by users with the `--highly-trusted` flag may be rendered directly in the browser, even if the file type could potentially contain active or unsafe content (pdf, svg, etc.). Additionally, trusted API keys are allowed to create new API keys via the dedicated endpoint.
+- Files uploaded by users with the `--highly-trusted` flag may be rendered directly in the browser, even if the file type could potentially contain active or unsafe content (pdf, svg). Additionally, trusted API keys are allowed to create new API keys via the dedicated endpoint.
