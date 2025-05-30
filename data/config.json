@@ -3,6 +3,6 @@
     "upload_path": "./data/upload",
     "max_file_size_in_mb": 10,
     "sqlite_db_path": "./data/fshare.sqlite",
-    "autodelete_interval_in_sec": 30,
+    "autodelete_interval_in_sec": 300,
     "env_path": "./data/secret.env"
 }
