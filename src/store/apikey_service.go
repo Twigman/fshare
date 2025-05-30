@@ -91,6 +91,9 @@ func (a *APIKeyService) GetUUIDForAPIKey(apiKey string) (string, error) {
 }
 
 func hashAPIKey(apiKey string) (string, error) {
+	if apiKey == "" {
+		return "", apperror.ErrEmptyAPIKey
+	}
 	if !apiKeyRegex.MatchString(apiKey) {
 		err := *apperror.ErrCharsNotAllowed
 		err.Msg = fmt.Sprintf("%s (allowed: a-z, A-Z, 0-9, -, _, .)", err.Msg)

@@ -202,7 +202,7 @@ func (s *ResourceService) DeleteResourceByUUID(rUUID string, keyUUID string) err
 
 	// needs to be owner
 	if res.APIKeyUUID != keyUUID {
-		return apperror.AuthorizationError
+		return apperror.ErrAuthorization
 	}
 
 	if res == nil {

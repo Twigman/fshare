@@ -19,7 +19,7 @@ func TestAPIKeyService_AddAPIKey(t *testing.T) {
 		{"trusted key", "test", "test", true, false, ""},
 		{"all symbols", "azAZ09-_.", "test", false, false, ""},
 		{"samed key", "123abcDEF", "test", false, true, "UNIQUE constraint failed"},
-		{"not allowed special chars", "azAZ09-_.=", "test", false, true, "characters are not allowed"},
+		{"not allowed special chars", "azAZ09-_.=", "test", false, true, "One or more characters are not permitted"},
 	}
 	uploadDir := t.TempDir()
 	dbPath := filepath.Join(uploadDir, "test_db.sqlite")
@@ -216,7 +216,7 @@ func TestHashAPIKey(t *testing.T) {
 
 	// invalid Key
 	_, err = hashAPIKey("invalid===")
-	if err == nil || !strings.Contains(err.Error(), "characters are not allowed") {
+	if err == nil || !strings.Contains(err.Error(), "One or more characters are not permitted") {
 		t.Fatalf("expected error for invalid key, got %v", err)
 	}
 }

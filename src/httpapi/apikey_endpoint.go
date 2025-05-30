@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/twigman/fshare/src/internal/apperror"
 )
 
 func (s *RESTService) CreateAPIKeyHandler(w http.ResponseWriter, r *http.Request) {
@@ -36,8 +38,11 @@ func (s *RESTService) CreateAPIKeyHandler(w http.ResponseWriter, r *http.Request
 
 	key, err := s.apiKeyService.AddAPIKey(req.Key, req.Comment, req.HighlyTrusted, &keyUUID)
 	if err != nil {
+		if err == apperror.ErrCharsNotAllowed || err == apperror.ErrEmptyAPIKey {
+			writeJSONStatus(w, http.StatusBadRequest, "Could not create API key")
+			return
+		}
 		writeJSONStatus(w, http.StatusInternalServerError, "Could not create API key")
-		log.Printf("Error creating API key in DB: %v", err)
 		return
 	}
 

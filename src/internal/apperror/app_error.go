@@ -35,7 +35,8 @@ var (
 	ErrFileAlreadyDeleted      = &FShareError{Code: 11003, Key: "file_already_deleted", Msg: "File already deleted"}
 	ErrResourceNotFound        = &FShareError{Code: http.StatusNotFound, Key: "resource_not_found", Msg: "Resource not found"}
 	ErrResourceResolvePath     = &FShareError{Code: http.StatusBadRequest, Key: "invalid_path", Msg: "Could not resolve path"}
-	ErrCharsNotAllowed         = &FShareError{Code: 10001, Key: "invalid_characters", Msg: "Some characters are not allowed"}
-	ErrDeleteHomeDirNotAllowed = &FShareError{Code: 11001, Key: "unauthorized_delete_home_dir", Msg: "Deleting the home directory is not allowed"}
-	AuthorizationError         = &FShareError{Code: http.StatusUnauthorized, Key: "unauthorized", Msg: "Not authorized"}
+	ErrCharsNotAllowed         = &FShareError{Code: http.StatusBadRequest, Key: "invalid_characters", Msg: "One or more characters are not permitted"}
+	ErrEmptyAPIKey             = &FShareError{Code: http.StatusBadRequest, Key: "invalid_apikey", Msg: "Empty API key"}
+	ErrDeleteHomeDirNotAllowed = &FShareError{Code: http.StatusForbidden, Key: "unauthorized_delete_home_dir", Msg: "Deleting the home directory is not allowed"}
+	ErrAuthorization           = &FShareError{Code: http.StatusUnauthorized, Key: "unauthorized", Msg: "Not authorized"}
 )
