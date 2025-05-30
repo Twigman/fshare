@@ -130,7 +130,7 @@ Create a new API key. Requires a valid **highly trusted** API key for authorizat
 
 ```bash
 curl -X POST http://localhost:8080/apikey \
-     -H "Authorization: Bearer <trusted-api-key>" \
+     -H "Authorization: Bearer 123" \
      -H "Content-Type: application/json" \
      -d '{
            "key": "new-api-key",
