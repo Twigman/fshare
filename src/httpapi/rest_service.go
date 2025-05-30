@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"path"
@@ -34,19 +35,19 @@ func NewRESTService(config *config.Config, as *store.APIKeyService, rs *store.Re
 func (s *RESTService) authorizeBearer(w http.ResponseWriter, r *http.Request) (string, error) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
-		http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+		writeJSONStatus(w, http.StatusUnauthorized, "Missing Authorization header")
 		return "", fmt.Errorf("missing authorization")
 	}
 	const prefix = "Bearer "
 	if !strings.HasPrefix(authHeader, prefix) {
-		http.Error(w, "Invalid Authorization scheme", http.StatusUnauthorized)
+		writeJSONStatus(w, http.StatusUnauthorized, "Invalid Authorization scheme")
 		return "", fmt.Errorf("invalid scheme")
 	}
 
 	apiKey := strings.TrimPrefix(authHeader, prefix)
 	keyUUID, err := s.apiKeyService.GetUUIDForAPIKey(apiKey)
 	if err != nil || keyUUID == "" {
-		http.Error(w, "Authorization failed", http.StatusUnauthorized)
+		writeJSONStatus(w, http.StatusUnauthorized, "Authorization failed")
 		return "", fmt.Errorf("invalid api key")
 	}
 	return keyUUID, nil
@@ -104,4 +105,16 @@ func (s *RESTService) isValidSignedRequest(r *http.Request, uuid string) bool {
 	}
 
 	return true
+}
+
+func writeJSONStatus(w http.ResponseWriter, statusCode int, statusMsg string) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	fmt.Fprintf(w, `{"status": %q}`, statusMsg)
+}
+
+func writeJSONResponse(w http.ResponseWriter, status int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(payload)
 }

@@ -3,9 +3,11 @@ package store
 import (
 	"fmt"
 	"io"
+	"log"
 	"mime/multipart"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,30 +32,61 @@ func (s *ResourceService) BuildResourcePath(r *Resource) (string, error) {
 
 	absBase, err := filepath.Abs(s.cfg.UploadPath)
 	if err != nil {
-		return "", apperror.ErrResolvePath
+		return "", apperror.ErrResourceResolvePath
 	}
 
 	absDst, err := filepath.Abs(dstPath)
 	if err != nil || !strings.HasPrefix(absDst, absBase) {
-		return "", apperror.ErrInvalidFilepath
+		return "", apperror.ErrFileInvalidFilepath
 	}
-	return dstPath, nil
+	return absDst, nil
 }
 
-func (s *ResourceService) SaveUploadedFile(file multipart.File, r *Resource) (string, error) {
+func (s *ResourceService) SaveUploadedFile(file multipart.File, r *Resource, allowRename bool) (string, error) {
 	if strings.Contains(r.Name, "..") ||
 		strings.Contains(r.Name, "/") ||
 		strings.Contains(r.Name, "\\") ||
 		strings.HasPrefix(r.Name, ".") {
-		return "", apperror.ErrInvalidFilename
+		return "", apperror.ErrFileInvalidFilename
 	}
 
 	r.Name = strings.TrimSpace(r.Name)
 	r.Name = filepath.Base(r.Name)
 
-	absDst, err := s.BuildResourcePath(r)
-	if err != nil {
-		return "", err
+	originalName := r.Name
+	var fileVersion string
+	var absDst string
+	var err error
+
+	// does file exist?
+	for {
+		r.Name = fileVersion + originalName
+		absDst, err = s.BuildResourcePath(r)
+		if err != nil {
+			return "", err
+		}
+		_, err = os.Stat(absDst)
+		if err == nil {
+			if allowRename {
+				// rename
+				if fileVersion == "" {
+					fileVersion = "0"
+				} else {
+					i, err := strconv.Atoi(fileVersion)
+					if err != nil {
+						return "", fmt.Errorf("error parsing fileVersion: %v", err)
+					}
+					fileVersion = fmt.Sprint(i + 1)
+				}
+			} else {
+				return "", apperror.ErrFileAlreadyExists
+			}
+		} else if os.IsNotExist(err) {
+			// file does not exist
+			break
+		} else {
+			return "", fmt.Errorf("unexpected error when renaming file: %v", err)
+		}
 	}
 
 	fileUUID, err := uuid.NewV7()
@@ -126,15 +159,15 @@ func (s *ResourceService) GetOrCreateHomeDir(hashed_key string) (*Resource, erro
 		}
 
 		r = &Resource{
-			UUID:              home_uuid.String(),
-			Name:              key.UUID,
-			IsPrivate:         true,
-			IsFile:            false,
-			ParentUUID:        nil,
-			APIKeyUUID:        key.UUID,
-			AutoDeleteInHours: 0,
-			CreatedAt:         time.Now().UTC(),
-			DeletedAt:         nil,
+			UUID:         home_uuid.String(),
+			Name:         key.UUID,
+			IsPrivate:    true,
+			IsFile:       false,
+			ParentUUID:   nil,
+			APIKeyUUID:   key.UUID,
+			AutoDeleteAt: nil,
+			CreatedAt:    time.Now().UTC(),
+			DeletedAt:    nil,
 		}
 
 		err = s.db.insertResource(r)
@@ -156,20 +189,34 @@ func (s *ResourceService) GetResourceByUUID(uuid string) (*Resource, error) {
 		return nil, err
 	}
 	if r == nil {
-		return nil, fmt.Errorf("resource not found")
+		return nil, apperror.ErrResourceNotFound
 	}
 	return r, nil
 }
 
 func (s *ResourceService) DeleteResourceByUUID(rUUID string, keyUUID string) error {
 	res, err := s.GetResourceByUUID(rUUID)
-	if err != nil || res == nil || !res.IsFile || res.DeletedAt != nil {
+	if err != nil {
 		return err
 	}
 
 	// needs to be owner
 	if res.APIKeyUUID != keyUUID {
-		return fmt.Errorf("authorization error")
+		return apperror.ErrAuthorization
+	}
+
+	if res == nil {
+		return apperror.ErrResourceNotFound
+	}
+
+	if res.DeletedAt != nil {
+		// already deleted
+		return apperror.ErrFileAlreadyDeleted
+	}
+
+	// detect home dir
+	if !res.IsFile && res.ParentUUID == nil {
+		return apperror.ErrDeleteHomeDirNotAllowed
 	}
 
 	resPath := filepath.Join(s.cfg.UploadPath, res.APIKeyUUID, res.Name)
@@ -199,6 +246,54 @@ func (s *ResourceService) MarkResourceAsBroken(rUUID string) error {
 	err = s.db.updateResource(res)
 	if err != nil {
 		return err
+	}
+	return nil
+}
+
+func (s *ResourceService) StartCleanupWorker(interval time.Duration, stopCh <-chan struct{}) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			err := s.cleanupExpiredFiles()
+			if err != nil {
+				log.Printf("Error cleaning up files: %v", err)
+			}
+		case <-stopCh:
+			log.Println("Cleanup worker stopped")
+			return
+		}
+	}
+}
+
+func (s *ResourceService) cleanupExpiredFiles() error {
+	now := time.Now().UTC()
+
+	files, err := s.db.findFilesForDeletion(now)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range files {
+		path, err := s.BuildResourcePath(file)
+		if err != nil {
+			log.Printf("Skipping file %s: %v", file.UUID, err)
+			continue
+		}
+
+		if err := os.Remove(path); err != nil {
+			log.Printf("Failed to delete file %s: %v", path, err)
+			continue
+		}
+
+		t := time.Now().UTC()
+		file.DeletedAt = &t
+		if err := s.db.updateResource(file); err != nil {
+			log.Printf("Failed to mark file %s as deleted: %v", file.UUID, err)
+			continue
+		}
 	}
 	return nil
 }

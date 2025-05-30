@@ -41,7 +41,7 @@ func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, i
 		return nil, nil, nil, nil, "", err
 	}
 
-	key, err := as.AddAPIKey(apiKey, "test key", keyHighlyTrusted)
+	key, err := as.AddAPIKey(apiKey, "test key", keyHighlyTrusted, nil)
 	if err != nil {
 		return nil, nil, nil, nil, "", err
 	}
@@ -55,13 +55,13 @@ func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, i
 	file := &fake.FakeMultipartFile{Reader: bytes.NewReader(content)}
 
 	r := &store.Resource{
-		Name:              filename,
-		IsPrivate:         isPrivate,
-		APIKeyUUID:        key.UUID,
-		AutoDeleteInHours: 0,
+		Name:         filename,
+		IsPrivate:    isPrivate,
+		APIKeyUUID:   key.UUID,
+		AutoDeleteAt: nil,
 	}
 
-	fileUUID, err := rs.SaveUploadedFile(file, r)
+	fileUUID, err := rs.SaveUploadedFile(file, r, false)
 	if err != nil {
 		return nil, nil, nil, nil, "", err
 	}

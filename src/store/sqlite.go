@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -39,7 +40,9 @@ func (s *SQLite) init() error {
 		hashed_key TEXT UNIQUE,
 		comment TEXT,
 		is_highly_trusted BOOLEAN,
-		created_at DATETIME
+		created_at DATETIME,
+		created_by TEXT,
+		FOREIGN KEY (created_by) REFERENCES api_key(uuid) ON DELETE SET NULL
 	);
 
 	CREATE TABLE IF NOT EXISTS resource (
@@ -49,7 +52,7 @@ func (s *SQLite) init() error {
 		is_file BOOLEAN,
 		parent_uuid TEXT,
 		api_key_uuid TEXT,
-		autodelete_in_hours INTEGER,
+		autodelete_at DATETIME,
 		created_at DATETIME,
 		deleted_at DATETIME,
 		is_broken BOOLEAN,
@@ -73,9 +76,9 @@ func (s *SQLite) init() error {
 func (s *SQLite) insertResource(r *Resource) error {
 	_, err := s.db.Exec(`
 		INSERT INTO resource (
-			uuid, name, is_private, is_file, parent_uuid, api_key_uuid, autodelete_in_hours, created_at, deleted_at, is_broken
+			uuid, name, is_private, is_file, parent_uuid, api_key_uuid, autodelete_at, created_at, deleted_at, is_broken
 		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	`, r.UUID, r.Name, r.IsPrivate, r.IsFile, r.ParentUUID, r.APIKeyUUID, r.AutoDeleteInHours, r.CreatedAt, r.DeletedAt, r.IsBroken)
+	`, r.UUID, r.Name, r.IsPrivate, r.IsFile, r.ParentUUID, r.APIKeyUUID, r.AutoDeleteAt, r.CreatedAt, r.DeletedAt, r.IsBroken)
 
 	if err != nil {
 		return err
@@ -84,9 +87,9 @@ func (s *SQLite) insertResource(r *Resource) error {
 }
 
 func (s *SQLite) findResourceByUUID(uuid string) (*Resource, error) {
-	row := s.db.QueryRow(`SELECT uuid, name, is_private, is_file, parent_uuid, api_key_uuid, autodelete_in_hours, created_at, deleted_at, is_broken FROM resource WHERE uuid = ?`, uuid)
+	row := s.db.QueryRow(`SELECT uuid, name, is_private, is_file, parent_uuid, api_key_uuid, autodelete_at, created_at, deleted_at, is_broken FROM resource WHERE uuid = ?`, uuid)
 	var r Resource
-	if err := row.Scan(&r.UUID, &r.Name, &r.IsPrivate, &r.IsFile, &r.ParentUUID, &r.APIKeyUUID, &r.AutoDeleteInHours, &r.CreatedAt, &r.DeletedAt, &r.IsBroken); err != nil {
+	if err := row.Scan(&r.UUID, &r.Name, &r.IsPrivate, &r.IsFile, &r.ParentUUID, &r.APIKeyUUID, &r.AutoDeleteAt, &r.CreatedAt, &r.DeletedAt, &r.IsBroken); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
@@ -100,7 +103,7 @@ func (s *SQLite) findActiveResource(name string, apiKeyUUID string, parentDir *s
 	if parentDir == nil {
 		row = s.db.QueryRow(`
 			SELECT uuid, name, is_private, is_file, parent_uuid, api_key_uuid,
-			       autodelete_in_hours, created_at, deleted_at, is_broken
+			       autodelete_at, created_at, deleted_at, is_broken
 			FROM resource
 			WHERE name = ?
 			  AND api_key_uuid = ?
@@ -111,7 +114,7 @@ func (s *SQLite) findActiveResource(name string, apiKeyUUID string, parentDir *s
 	} else {
 		row = s.db.QueryRow(`
 			SELECT uuid, name, is_private, is_file, parent_uuid, api_key_uuid,
-			       autodelete_in_hours, created_at, deleted_at, is_broken
+			       autodelete_at, created_at, deleted_at, is_broken
 			FROM resource
 			WHERE name = ?
 			  AND api_key_uuid = ?
@@ -129,7 +132,7 @@ func (s *SQLite) findActiveResource(name string, apiKeyUUID string, parentDir *s
 
 	var r Resource
 	if err := row.Scan(&r.UUID, &r.Name, &r.IsPrivate, &r.IsFile, &r.ParentUUID,
-		&r.APIKeyUUID, &r.AutoDeleteInHours, &r.CreatedAt, &r.DeletedAt, &r.IsBroken); err != nil {
+		&r.APIKeyUUID, &r.AutoDeleteAt, &r.CreatedAt, &r.DeletedAt, &r.IsBroken); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
@@ -146,21 +149,49 @@ func (s *SQLite) updateResource(r *Resource) error {
 		    is_file = ?,
 		    parent_uuid = ?,
 		    api_key_uuid = ?,
-		    autodelete_in_hours = ?,
+		    autodelete_at = ?,
 		    created_at = ?,
 		    deleted_at = ?,
 			is_broken = ?
 		WHERE uuid = ?
-	`, r.Name, r.IsPrivate, r.IsFile, r.ParentUUID, r.APIKeyUUID, r.AutoDeleteInHours, r.CreatedAt, r.DeletedAt, r.IsBroken, r.UUID)
+	`, r.Name, r.IsPrivate, r.IsFile, r.ParentUUID, r.APIKeyUUID, r.AutoDeleteAt, r.CreatedAt, r.DeletedAt, r.IsBroken, r.UUID)
 	return err
+}
+
+// findFilesForDeletion finds and returns all undeleted resources that should be deleted according to autodelete_at
+func (s *SQLite) findFilesForDeletion(deleteTime time.Time) ([]*Resource, error) {
+	rows, err := s.db.Query(`
+		SELECT uuid, name, is_private, is_file, parent_uuid, api_key_uuid, autodelete_at, created_at, deleted_at, is_broken 
+		FROM resource
+		WHERE autodelete_at <= ? AND deleted_at IS NULL
+	`, deleteTime)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var resources []*Resource
+	for rows.Next() {
+		var r Resource
+		if err := rows.Scan(&r.UUID, &r.Name, &r.IsPrivate, &r.IsFile, &r.ParentUUID, &r.APIKeyUUID, &r.AutoDeleteAt, &r.CreatedAt, &r.DeletedAt, &r.IsBroken); err != nil {
+			return nil, err
+		}
+		resources = append(resources, &r)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return resources, nil
 }
 
 // insertAPIKey saves a hashed API key, a comment and the timestamp
 func (s *SQLite) insertAPIKey(key *APIKey) error {
 	_, err := s.db.Exec(`
-		INSERT INTO api_key (uuid, hashed_key, comment, is_highly_trusted, created_at)
-		VALUES (?, ?, ?, ?, ?)
-	`, key.UUID, key.HashedKey, key.Comment, key.IsHighlyTrusted, key.CreatedAt)
+		INSERT INTO api_key (uuid, hashed_key, comment, is_highly_trusted, created_at, created_by)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, key.UUID, key.HashedKey, key.Comment, key.IsHighlyTrusted, key.CreatedAt, key.CreatedBy)
 
 	if err != nil {
 		return fmt.Errorf("error adding API key: %v", err)
@@ -181,9 +212,9 @@ func (s *SQLite) countApiKeyEntries() (int, error) {
 
 // findAPIKeyByHash finds and returns the api_key entry containing the hashed key
 func (s *SQLite) findAPIKeyByHash(hash string) (*APIKey, error) {
-	row := s.db.QueryRow(`SELECT uuid, hashed_key, comment, is_highly_trusted, created_at FROM api_key WHERE hashed_key = ?`, hash)
+	row := s.db.QueryRow(`SELECT uuid, hashed_key, comment, is_highly_trusted, created_at, created_by FROM api_key WHERE hashed_key = ?`, hash)
 	var k APIKey
-	if err := row.Scan(&k.UUID, &k.HashedKey, &k.Comment, &k.IsHighlyTrusted, &k.CreatedAt); err != nil {
+	if err := row.Scan(&k.UUID, &k.HashedKey, &k.Comment, &k.IsHighlyTrusted, &k.CreatedAt, &k.CreatedBy); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
@@ -194,9 +225,9 @@ func (s *SQLite) findAPIKeyByHash(hash string) (*APIKey, error) {
 
 // findAPIKeyByUUID finds and returns the api_key entry by its uuid
 func (s *SQLite) findAPIKeyByUUID(uuid string) (*APIKey, error) {
-	row := s.db.QueryRow(`SELECT uuid, hashed_key, comment, is_highly_trusted, created_at FROM api_key WHERE uuid = ?`, uuid)
+	row := s.db.QueryRow(`SELECT uuid, hashed_key, comment, is_highly_trusted, created_at, created_by FROM api_key WHERE uuid = ?`, uuid)
 	var k APIKey
-	if err := row.Scan(&k.UUID, &k.HashedKey, &k.Comment, &k.IsHighlyTrusted, &k.CreatedAt); err != nil {
+	if err := row.Scan(&k.UUID, &k.HashedKey, &k.Comment, &k.IsHighlyTrusted, &k.CreatedAt, &k.CreatedBy); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}

@@ -19,7 +19,7 @@ func TestAPIKeyService_AddAPIKey(t *testing.T) {
 		{"trusted key", "test", "test", true, false, ""},
 		{"all symbols", "azAZ09-_.", "test", false, false, ""},
 		{"samed key", "123abcDEF", "test", false, true, "UNIQUE constraint failed"},
-		{"not allowed special chars", "azAZ09-_.=", "test", false, true, "characters are not allowed"},
+		{"not allowed special chars", "azAZ09-_.=", "test", false, true, "One or more characters are not permitted"},
 	}
 	uploadDir := t.TempDir()
 	dbPath := filepath.Join(uploadDir, "test_db.sqlite")
@@ -32,7 +32,7 @@ func TestAPIKeyService_AddAPIKey(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			key, err := as.AddAPIKey(tt.key, tt.comment, tt.trusted)
+			key, err := as.AddAPIKey(tt.key, tt.comment, tt.trusted, nil)
 			if err != nil {
 				if !tt.expectCreateErr {
 					t.Fatalf("error adding apikey %v", err)
@@ -104,7 +104,7 @@ func TestAPIKeyService_AnyAPIKeyExists(t *testing.T) {
 		t.Fatalf("no API key should exist at this time")
 	}
 
-	as.AddAPIKey("123", "test", false)
+	as.AddAPIKey("123", "test", false, nil)
 	if !as.AnyAPIKeyExists() {
 		t.Fatalf("API key should exist")
 	}
@@ -131,7 +131,7 @@ func TestAPIKeyService_IsAPIKeyHighlyTrusted(t *testing.T) {
 	}
 
 	// add trusted key
-	k, err := as.AddAPIKey("trustedkey", "test", true)
+	k, err := as.AddAPIKey("trustedkey", "test", true, nil)
 	if err != nil {
 		t.Fatalf("could not add API key: %v", err)
 	}
@@ -145,7 +145,7 @@ func TestAPIKeyService_IsAPIKeyHighlyTrusted(t *testing.T) {
 	}
 
 	// add untrusted key
-	k2, err := as.AddAPIKey("untrustedkey", "test", false)
+	k2, err := as.AddAPIKey("untrustedkey", "test", false, nil)
 	if err != nil {
 		t.Fatalf("could not add API key: %v", err)
 	}
@@ -179,7 +179,7 @@ func TestAPIKeyService_GetUUIDForAPIKey(t *testing.T) {
 	}
 
 	// add key
-	k, err := as.AddAPIKey("myapikey", "test", false)
+	k, err := as.AddAPIKey("myapikey", "test", false, nil)
 	if err != nil {
 		t.Fatalf("could not add API key: %v", err)
 	}
@@ -216,7 +216,7 @@ func TestHashAPIKey(t *testing.T) {
 
 	// invalid Key
 	_, err = hashAPIKey("invalid===")
-	if err == nil || !strings.Contains(err.Error(), "characters are not allowed") {
+	if err == nil || !strings.Contains(err.Error(), "One or more characters are not permitted") {
 		t.Fatalf("expected error for invalid key, got %v", err)
 	}
 }

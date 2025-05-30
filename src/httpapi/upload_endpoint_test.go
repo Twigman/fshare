@@ -19,12 +19,11 @@ import (
 func TestUploadHandler_Success(t *testing.T) {
 	uploadDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:               uploadDir,
-		MaxFileSizeInMB:          5,
-		Port:                     8080,
-		SQLitePath:               filepath.Join(uploadDir, "test_db.sqlite"),
-		ContinuousFileValidation: false,
-		EnvPath:                  filepath.Join(uploadDir, "test.env"),
+		UploadPath:      uploadDir,
+		MaxFileSizeInMB: 5,
+		Port:            8080,
+		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
+		EnvPath:         filepath.Join(uploadDir, "test.env"),
 	}
 
 	as, rs, restService, err := httpapi.InitTestServices(cfg)
@@ -33,7 +32,7 @@ func TestUploadHandler_Success(t *testing.T) {
 	}
 
 	const apiKey = "123"
-	key, err := as.AddAPIKey(apiKey, "test key", false)
+	key, err := as.AddAPIKey(apiKey, "test key", false, nil)
 	if err != nil {
 		t.Fatalf("Can not add API key: %v", err)
 	}
@@ -156,7 +155,7 @@ func TestUploadHandler_TooLarge(t *testing.T) {
 	}
 
 	const apiKey = "123"
-	_, err = as.AddAPIKey(apiKey, "test key", false)
+	_, err = as.AddAPIKey(apiKey, "test key", false, nil)
 	if err != nil {
 		t.Fatalf("Can not add API key: %v", err)
 	}
@@ -211,7 +210,7 @@ func TestUploadHandler_MissingFileField(t *testing.T) {
 	}
 
 	const apiKey = "123"
-	_, err = as.AddAPIKey(apiKey, "test key", false)
+	_, err = as.AddAPIKey(apiKey, "test key", false, nil)
 	if err != nil {
 		t.Fatalf("Can not add API key: %v", err)
 	}
@@ -267,12 +266,11 @@ func TestUploadHandler_MissingAuthHeader(t *testing.T) {
 func TestUploadHandler_UnregisteredAPIKeyHeader(t *testing.T) {
 	uploadDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:               uploadDir,
-		MaxFileSizeInMB:          5,
-		Port:                     8080,
-		SQLitePath:               filepath.Join(uploadDir, "test_db.sqlite"),
-		EnvPath:                  filepath.Join(uploadDir, "test.env"),
-		ContinuousFileValidation: false,
+		UploadPath:      uploadDir,
+		MaxFileSizeInMB: 5,
+		Port:            8080,
+		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
+		EnvPath:         filepath.Join(uploadDir, "test.env"),
 	}
 
 	as, _, restService, err := httpapi.InitTestServices(cfg)
@@ -281,7 +279,7 @@ func TestUploadHandler_UnregisteredAPIKeyHeader(t *testing.T) {
 	}
 
 	const apiKey = "123"
-	_, err = as.AddAPIKey(apiKey, "test key", false)
+	_, err = as.AddAPIKey(apiKey, "test key", false, nil)
 	if err != nil {
 		t.Fatalf("Can not add API key: %v", err)
 	}
@@ -332,12 +330,11 @@ func TestUploadHandler_UnregisteredAPIKeyHeader(t *testing.T) {
 func TestUploadHandler_HiddenFile(t *testing.T) {
 	uploadDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:               uploadDir,
-		MaxFileSizeInMB:          5,
-		Port:                     8080,
-		SQLitePath:               filepath.Join(uploadDir, "test_db.sqlite"),
-		EnvPath:                  filepath.Join(uploadDir, "test.env"),
-		ContinuousFileValidation: false,
+		UploadPath:      uploadDir,
+		MaxFileSizeInMB: 5,
+		Port:            8080,
+		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
+		EnvPath:         filepath.Join(uploadDir, "test.env"),
 	}
 
 	as, rs, restService, err := httpapi.InitTestServices(cfg)
@@ -346,7 +343,7 @@ func TestUploadHandler_HiddenFile(t *testing.T) {
 	}
 
 	const apiKey = "123"
-	key, err := as.AddAPIKey(apiKey, "test key", false)
+	key, err := as.AddAPIKey(apiKey, "test key", false, nil)
 	if err != nil {
 		t.Fatalf("Can not add API key: %v", err)
 	}
@@ -399,12 +396,11 @@ func TestUploadHandler_HiddenFile(t *testing.T) {
 func TestUploadHandler_InvalidFilename_1(t *testing.T) {
 	uploadDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:               uploadDir,
-		MaxFileSizeInMB:          5,
-		Port:                     8080,
-		SQLitePath:               filepath.Join(uploadDir, "test_db.sqlite"),
-		EnvPath:                  filepath.Join(uploadDir, "test.env"),
-		ContinuousFileValidation: false,
+		UploadPath:      uploadDir,
+		MaxFileSizeInMB: 5,
+		Port:            8080,
+		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
+		EnvPath:         filepath.Join(uploadDir, "test.env"),
 	}
 
 	as, rs, restService, err := httpapi.InitTestServices(cfg)
@@ -413,7 +409,7 @@ func TestUploadHandler_InvalidFilename_1(t *testing.T) {
 	}
 
 	const apiKey = "123"
-	key, err := as.AddAPIKey(apiKey, "test key", false)
+	key, err := as.AddAPIKey(apiKey, "test key", false, nil)
 	if err != nil {
 		t.Fatalf("Can not add API key: %v", err)
 	}

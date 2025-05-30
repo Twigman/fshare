@@ -3,11 +3,13 @@ package httpapi
 import (
 	"net/http"
 	"strings"
+
+	"github.com/twigman/fshare/src/internal/apperror"
 )
 
 func (s *RESTService) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodDelete {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		writeJSONStatus(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -19,8 +21,23 @@ func (s *RESTService) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 	rUUID := strings.TrimPrefix(r.URL.Path, "/delete/")
 	err = s.resourceService.DeleteResourceByUUID(rUUID, keyUUID)
 	if err != nil {
-		http.Error(w, "Delete failed", http.StatusInternalServerError)
-		return
+		if err == apperror.ErrDeleteHomeDirNotAllowed {
+			writeJSONStatus(w, http.StatusForbidden, "No permission to delete this object")
+			return
+		} else if err == apperror.ErrFileAlreadyDeleted {
+			writeJSONStatus(w, http.StatusNotFound, "Resource not found")
+			return
+		} else if err == apperror.ErrResourceNotFound {
+			writeJSONStatus(w, http.StatusNotFound, "Resource not found")
+			return
+		} else if err == apperror.ErrAuthorization {
+			// should not occur, as it is validated beforehand
+			writeJSONStatus(w, apperror.ErrAuthorization.Code, "Unauthorized")
+			return
+		} else {
+			writeJSONStatus(w, http.StatusInternalServerError, "Delete failed")
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusNoContent)
