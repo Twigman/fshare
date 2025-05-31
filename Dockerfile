@@ -2,6 +2,8 @@ FROM alpine:latest
 
 WORKDIR /app
 
-COPY dist/fshare-linux-amd64 .
+# Build-Arg from workflow
+ARG TARGETARCH
+COPY dist/fshare-${TARGETARCH} ./fshare
 
-ENTRYPOINT ["./fshare-linux-amd64"]
+ENTRYPOINT ["./fshare"]
