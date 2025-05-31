@@ -3,7 +3,6 @@ package config
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 )
 
@@ -47,9 +46,6 @@ func (c *Config) Validate() error {
 	// upload_path
 	if c.UploadPath == "" {
 		return errors.New("upload_path is required")
-	}
-	if info, err := os.Stat(c.UploadPath); err != nil || !info.IsDir() {
-		return fmt.Errorf("invalid upload path: %v", err)
 	}
 
 	return nil

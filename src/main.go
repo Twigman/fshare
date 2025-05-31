@@ -55,6 +55,12 @@ func main() {
 	as := store.NewAPIKeyService(db)
 	rs := store.NewResourceService(cfg, db)
 
+	// create upload folder
+	err = rs.CreateUploadDir()
+	if err != nil {
+		log.Fatalf("Error creating upload folder: %v", err)
+	}
+
 	// add api-key if provided
 	if *flagAPIKey != "" {
 		key, err := as.AddAPIKey(*flagAPIKey, *flagComment, *flagHighlyTrusted, nil)

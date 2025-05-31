@@ -191,15 +191,3 @@ func TestValidate(t *testing.T) {
 		})
 	}
 }
-
-func TestValidate_NonExistentUploadPath(t *testing.T) {
-	cfg := &Config{
-		Port:            8080,
-		UploadPath:      filepath.Join(t.TempDir(), "nonexistent"),
-		MaxFileSizeInMB: 1,
-	}
-	err := cfg.Validate()
-	if err == nil || err.Error() == "" {
-		t.Errorf("Expected invalid upload path error, got: %v", err)
-	}
-}

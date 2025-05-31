@@ -127,6 +127,14 @@ func (s *ResourceService) SaveUploadedFile(file multipart.File, r *Resource, all
 	return fileUUID.String(), nil
 }
 
+func (s *ResourceService) CreateUploadDir() error {
+	absUploadFolder, err := filepath.Abs(s.cfg.UploadPath)
+	if err != nil {
+		return apperror.ErrResourceResolvePath
+	}
+	return os.MkdirAll(absUploadFolder, 0o700)
+}
+
 func (s *ResourceService) GetOrCreateHomeDir(hashed_key string) (*Resource, error) {
 	key, err := s.db.findAPIKeyByHash(hashed_key)
 	if err != nil {
