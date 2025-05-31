@@ -1,6 +1,6 @@
 services:
   fshare:
-    image: twigman/fshare
+    image: twigman/fshare:latest
     container_name: fshare
     command: --config /data/config.json --api-key 123 --comment "initial key" --highly-trusted
     volumes:
