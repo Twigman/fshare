@@ -22,15 +22,7 @@ git clone https://github.com/twigman/fshare.git
 cd fshare
 ```
 
-### 2. Prepare the upload directory
-
-```bash
-mkdir -p ./data/uploads
-```
-
-> Make sure the directory matches the path configured in your config file.
-
-### 3. Generate a save API key
+### 2. Generate a save API key
 
 ```bash
 openssl rand -hex 32
