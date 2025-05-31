@@ -41,7 +41,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: binaries
+        name: ${PROJECT}-${{ matrix.goos }}-${{ matrix.goarch }}
         path: dist/*
 
   release:
@@ -66,7 +66,7 @@ jobs:
         tag_name: ${{ github.event.inputs.tag }}
         name: Release ${{ github.event.inputs.tag }}
         draft: false
-        files: dist/*
+        files: dist/**/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
