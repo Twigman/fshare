@@ -4,6 +4,6 @@ WORKDIR /app
 
 # Build-Arg from workflow
 ARG TARGETARCH
-COPY dist/fshare-linux-${TARGETARCH} ./fshare
+COPY dist/fshare-linux-${TARGETARCH} /app/fshare
 
-ENTRYPOINT ["./fshare"]
+ENTRYPOINT ["/app/fshare"]
