@@ -48,7 +48,7 @@ go run ./src --config ./data/config.json
 
 ## Example Usage
 
-### ✅ Upload a file
+### ⬆️ Upload a file
 
 ```bash
 curl -X POST http://localhost:8080/upload \
