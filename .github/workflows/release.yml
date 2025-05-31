@@ -41,7 +41,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${PROJECT}-${{ matrix.goos }}-${{ matrix.goarch }}
+        name: binaries-${PROJECT}-${{ matrix.goos }}-${{ matrix.goarch }}
         path: dist/*
 
   release:
