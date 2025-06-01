@@ -15,7 +15,6 @@ type Env struct {
 }
 
 func LoadOrCreateEnv(path string) (*Env, error) {
-	fmt.Println("!!!!!!!!!!!!!!!!! NOW !!!!!!!!!!!!!!!!!!!!")
 	filePath := filepath.Join(path, ".env")
 	absPath, err := filepath.Abs(filePath)
 	if err != nil {
