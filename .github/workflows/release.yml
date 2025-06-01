@@ -57,6 +57,9 @@ jobs:
       with:
         path: dist
 
+    - name: Make binaries executable
+      run: chmod +x dist/*/*
+
     - name: List downloaded files
       run: ls -R dist/
 
