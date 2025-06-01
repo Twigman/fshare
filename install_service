@@ -3,8 +3,8 @@
 set -e
 
 # === Adjust these variables ===
-REPO="twigman/fshare"         # Dein GitHub-Repo
-BINARY_PREFIX="fshare-linux-amd64"  # Dateiname der Binary im Release
+REPO="twigman/fshare"
+BINARY_NAME="fshare-linux-amd64"
 USER_NAME="$(whoami)"
 
 # === Install paths ===
@@ -18,7 +18,7 @@ echo "🔧 Fetching latest binary from GitHub..."
 
 LATEST_URL=$(curl -s https://api.github.com/repos/$REPO/releases/latest \
   | grep browser_download_url \
-  | grep $BINARY_PREFIX \
+  | grep $BINARY_NAME \
   | cut -d '"' -f 4)
 
 if [ -z "$LATEST_URL" ]; then
@@ -34,8 +34,8 @@ echo "Downloaded binary: $LATEST_URL"
 # === Install binary ===
 echo "Installing binary to $BIN_DIR..."
 sudo mkdir -p "$BIN_DIR"
-sudo cp "$TMP_FILE" "$BIN_DIR/$BINARY_PREFIX"
-sudo chmod +x "$BIN_DIR/$BINARY_PREFIX"
+sudo cp "$TMP_FILE" "$BIN_DIR/$BINARY_NAME"
+sudo chmod +x "$BIN_DIR/$BINARY_NAME"
 rm "$TMP_FILE"
 
 # === Create config directory ===
@@ -77,7 +77,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=$BIN_DIR/$BINARY_PREFIX --config $CONFIG_DIR/config.json
+ExecStart=$BIN_DIR/$BINARY_NAME --config $CONFIG_DIR/config.json
 WorkingDirectory=$BIN_DIR
 Restart=on-failure
 User=$USER_NAME
