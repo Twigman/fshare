@@ -14,6 +14,7 @@ import (
 
 	"github.com/twigman/fshare/src/config"
 	"github.com/twigman/fshare/src/httpapi"
+	"github.com/twigman/fshare/src/store"
 )
 
 func TestUploadHandler_Success(t *testing.T) {
@@ -36,10 +37,9 @@ func TestUploadHandler_Success(t *testing.T) {
 		t.Fatalf("Can not add API key: %v", err)
 	}
 
-	// create home dir
-	err = rs.CreateUploadDir()
+	err = store.CreateDirsFromConfig(cfg)
 	if err != nil {
-		t.Fatalf("Can not create upload dir: %v", err)
+		t.Fatalf("Can not create app dirs: %v", err)
 	}
 
 	if _, err = rs.GetOrCreateHomeDir(key.HashedKey); err != nil {
@@ -404,6 +404,7 @@ func TestUploadHandler_InvalidFilename_1(t *testing.T) {
 	dataDir := t.TempDir()
 	cfg := &config.Config{
 		DataPath:        dataDir,
+		UploadPath:      filepath.Join(dataDir, "upload"),
 		MaxFileSizeInMB: 5,
 		Port:            8080,
 	}

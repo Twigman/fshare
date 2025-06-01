@@ -55,9 +55,9 @@ func TestFileService_SaveUploadedFile(t *testing.T) {
 		AutoDeleteAt: nil,
 	}
 
-	err = rs.CreateUploadDir()
+	err = CreateDirsFromConfig(cfg)
 	if err != nil {
-		t.Fatalf("Error creating upload dir: %v", err)
+		t.Fatalf("Error creating app dirs: %v", err)
 	}
 
 	// create dir
@@ -116,9 +116,9 @@ func TestFileService_GetOrCreateHomeDir(t *testing.T) {
 		t.Fatalf("insertAPIKey failed: %v", err)
 	}
 
-	err = rs.CreateUploadDir()
+	err = CreateDirsFromConfig(cfg)
 	if err != nil {
-		t.Fatalf("CreateUploadDir error: %v", err)
+		t.Fatalf("CreateDirsFromConfig error: %v", err)
 	}
 
 	// create home dir
@@ -169,9 +169,9 @@ func TestFileService_SaveUploadedFileMultipleTimes(t *testing.T) {
 		t.Fatalf("Error initializing test services: %v", err)
 	}
 
-	err = rs.CreateUploadDir()
+	err = CreateDirsFromConfig(cfg)
 	if err != nil {
-		t.Fatalf("Error creating upload dir: %v", err)
+		t.Fatalf("Error creating app dirs: %v", err)
 	}
 
 	// create dir

@@ -1,6 +1,6 @@
 {
     "port": 8080,
-    "data_path": "./data",
+    "data_path": "./data/app",
     "upload_path": "./data/upload",
     "max_file_size_in_mb": 10,
     "autodelete_interval_in_sec": 300

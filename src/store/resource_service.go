@@ -127,12 +127,29 @@ func (s *ResourceService) SaveUploadedFile(file multipart.File, r *Resource, all
 	return fileUUID.String(), nil
 }
 
-func (s *ResourceService) CreateUploadDir() error {
-	absUploadFolder, err := filepath.Abs(s.cfg.UploadPath)
+// CreateDirsFromConfig creates all referenced directories from the config. Needs to be called before the resource service is initialized.
+func CreateDirsFromConfig(cfg *config.Config) error {
+	absUploadFolder, err := filepath.Abs(cfg.UploadPath)
 	if err != nil {
 		return apperror.ErrResourceResolvePath
 	}
-	return os.MkdirAll(absUploadFolder, 0o700)
+
+	err = os.MkdirAll(absUploadFolder, 0o700)
+	if err != nil {
+		return err
+	}
+
+	absDataFolder, err := filepath.Abs(cfg.DataPath)
+	if err != nil {
+		return apperror.ErrResourceResolvePath
+	}
+
+	err = os.MkdirAll(absDataFolder, 0o700)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *ResourceService) GetOrCreateHomeDir(hashed_key string) (*Resource, error) {
@@ -152,6 +169,11 @@ func (s *ResourceService) GetOrCreateHomeDir(hashed_key string) (*Resource, erro
 
 	if r == nil {
 		// home should not exist
+		if s.cfg.UploadPath == "" {
+			// happens sometimes in tests
+			return nil, fmt.Errorf("config attribute UploadPath is empty")
+		}
+
 		homePath := filepath.Join(s.cfg.UploadPath, key.UUID)
 		err := os.Mkdir(homePath, 0o700)
 		if err != nil {

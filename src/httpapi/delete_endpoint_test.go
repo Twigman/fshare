@@ -9,6 +9,7 @@ import (
 
 	"github.com/twigman/fshare/src/config"
 	"github.com/twigman/fshare/src/httpapi"
+	"github.com/twigman/fshare/src/store"
 )
 
 func TestDeleteHandler_WithoutAuth(t *testing.T) {
@@ -161,9 +162,9 @@ func TestDeleteHandler_DeleteHomeDir(t *testing.T) {
 		t.Fatalf("Test setup error: %v", err)
 	}
 
-	err = rs.CreateUploadDir()
+	err = store.CreateDirsFromConfig(cfg)
 	if err != nil {
-		t.Fatalf("Error creating upload dir: %v", err)
+		t.Fatalf("Error creating app dirs: %v", err)
 	}
 
 	// add key

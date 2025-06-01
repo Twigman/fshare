@@ -45,7 +45,7 @@ func SetupExistingTestUpload(dataDir string, apiKey string, filename string, isP
 		return nil, nil, nil, nil, nil, "", err
 	}
 
-	err = rs.CreateUploadDir()
+	err = store.CreateDirsFromConfig(cfg)
 	if err != nil {
 		return nil, nil, nil, nil, nil, "", err
 	}

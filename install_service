@@ -58,6 +58,7 @@ fi
 echo "Creating data directory $DATA_DIR..."
 sudo mkdir -p "$DATA_DIR"
 sudo chown -R "$USER_NAME":"$USER_NAME" "$DATA_DIR"
+sudo chmod 700 $DATA_DIR
 
 # === Create log directory ===
 echo "Creating log directory $LOG_DIR..."

@@ -42,6 +42,12 @@ func main() {
 
 	log.Printf("Config loaded\n")
 
+	// create directories
+	err = store.CreateDirsFromConfig(cfg)
+	if err != nil {
+		log.Fatalf("Error creating app directories: %v", err)
+	}
+
 	/******************************
 	 * db
 	 ******************************/
@@ -56,47 +62,46 @@ func main() {
 	as := store.NewAPIKeyService(db)
 	rs := store.NewResourceService(cfg, db)
 
-	// create upload folder
-	err = rs.CreateUploadDir()
-	if err != nil {
-		log.Fatalf("Error creating upload folder: %v", err)
-	}
+	var key *store.APIKey
 
 	// add api-key if provided
 	if *flagAPIKey != "" {
-		key, err := as.AddAPIKey(*flagAPIKey, *flagComment, *flagHighlyTrusted, nil)
+		key, err = as.AddAPIKey(*flagAPIKey, *flagComment, *flagHighlyTrusted, nil)
 		if err != nil {
 			log.Fatalf("Error saving initial API key: %v", err)
 		}
 		log.Printf("Initial API key was added.")
+	}
 
+	if !as.AnyAPIKeyExists() {
+		// generate first API key
+		log.Printf("No API key exists and no one was provided as a parameter.")
+		keyStr, err := utils.GenerateSecret(32)
+		if err != nil {
+			log.Fatalf("Could not generate key: %v", err)
+		}
+
+		key, err = as.AddAPIKey(keyStr, "initial key", true, nil)
+		if err != nil {
+			log.Fatalf("Could not register key")
+		}
+
+		initPath, err := config.CreateInitDataEnv(cfg.DataPath, keyStr)
+		if err != nil {
+			log.Fatalf("Could not save initial key: %v", err)
+		}
+
+		log.Printf("Initial API key generated and saved to: %s\n", initPath)
+	}
+
+	if key != nil {
+		// new key was created
 		r, err := rs.GetOrCreateHomeDir(key.HashedKey)
 		if err != nil {
 			log.Fatalf("Error creating home dir: %v", err)
 		}
 
 		log.Printf("Created home dir: %s\n", filepath.Join(cfg.UploadPath, r.Name))
-	}
-
-	if !as.AnyAPIKeyExists() {
-		// generate first API key
-		log.Printf("No API key exists and no one was provided as a parameter.")
-		key, err := utils.GenerateSecret(32)
-		if err != nil {
-			log.Fatalf("Could not generate key: %v", err)
-		}
-
-		_, err = as.AddAPIKey(key, "initial key", true, nil)
-		if err != nil {
-			log.Fatalf("Could not register key")
-		}
-
-		initPath, err := config.CreateInitDataEnv(cfg.DataPath, key)
-		if err != nil {
-			log.Fatalf("Could not save initial key: %v", err)
-		}
-
-		log.Printf("Initial API key generated and saved to: %s\n", initPath)
 	}
 
 	/******************************

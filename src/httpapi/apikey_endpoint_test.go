@@ -25,9 +25,9 @@ func TestCreateAPIKeyHandler(t *testing.T) {
 	rs := store.NewResourceService(cfg, db)
 	restService := httpapi.NewRESTService(cfg, as, rs)
 
-	err = rs.CreateUploadDir()
+	err = store.CreateDirsFromConfig(cfg)
 	if err != nil {
-		t.Fatalf("failed to create upload dir: %v", err)
+		t.Fatalf("failed to create app dirs: %v", err)
 	}
 
 	// create initial trusted and untrusted API keys
