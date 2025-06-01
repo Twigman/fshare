@@ -22,7 +22,7 @@ LATEST_URL=$(curl -s https://api.github.com/repos/$REPO/releases/latest \
   | cut -d '"' -f 4)
 
 if [ -z "$LATEST_URL" ]; then
-  echo "Could not find latest binary URL. Check your GitHub repo and binary naming."
+  echo "Could not find latest binary URL. Check the GitHub repo and binary naming."
   exit 1
 fi
 
@@ -46,11 +46,10 @@ if [ ! -f "$CONFIG_DIR/config.json" ]; then
   sudo tee "$CONFIG_DIR/config.json" > /dev/null <<EOF
 {
     "port": 8182,
+    "data_path": "$DATA_DIR"
     "upload_path": "$DATA_DIR/upload",
     "max_file_size_in_mb": 10,
-    "sqlite_db_path": "$DATA_DIR/fshare.sqlite",
     "autodelete_interval_in_sec": 300,
-    "env_path": "$DATA_DIR/secret.env"
 }
 EOF
 fi
