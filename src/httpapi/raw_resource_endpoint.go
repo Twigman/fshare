@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/twigman/fshare/src/config"
 )
 
 func (s *RESTService) RawResourceHandler(w http.ResponseWriter, r *http.Request) {
@@ -16,7 +18,7 @@ func (s *RESTService) RawResourceHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	// query paramters are not in the path
-	file_uuid := strings.TrimPrefix(r.URL.Path, "/raw/")
+	file_uuid := strings.TrimPrefix(r.URL.Path, config.EndpointRaw)
 
 	if !s.isValidSignedRequest(r, file_uuid) {
 		writeJSONStatus(w, http.StatusUnauthorized, "Unauthorized")

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/twigman/fshare/src/config"
 	"github.com/twigman/fshare/src/internal/apperror"
 )
 
@@ -18,7 +19,7 @@ func (s *RESTService) DeleteHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rUUID := strings.TrimPrefix(r.URL.Path, "/delete/")
+	rUUID := strings.TrimPrefix(r.URL.Path, config.EndpointDelete)
 	err = s.resourceService.DeleteResourceByUUID(rUUID, keyUUID)
 	if err != nil {
 		if err == apperror.ErrDeleteHomeDirNotAllowed {

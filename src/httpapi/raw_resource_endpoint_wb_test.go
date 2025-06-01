@@ -23,7 +23,7 @@ func TestRawResourceHandler_MethodNotAllowed(t *testing.T) {
 		t.Fatalf("InitTestServices error: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/raw/someuuid", nil)
+	req := httptest.NewRequest(http.MethodPost, "/f/raw/someuuid", nil)
 	w := httptest.NewRecorder()
 
 	restService.RawResourceHandler(w, req)
@@ -41,7 +41,7 @@ func TestRawResourceHandler_Unauthorized(t *testing.T) {
 	}
 
 	// UUID without signature
-	req := httptest.NewRequest(http.MethodGet, "/raw/"+fileUUID, nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointRaw+fileUUID, nil)
 	w := httptest.NewRecorder()
 
 	restService.RawResourceHandler(w, req)
@@ -68,7 +68,7 @@ func TestRawResourceHandler_FileMissing(t *testing.T) {
 	// valid request
 	expiry := time.Now().Add(30 * time.Second)
 
-	signURL, err := restService.generateSignedURL("/raw", fileUUID, expiry)
+	signURL, err := restService.generateSignedURL(config.EndpointRaw, fileUUID, expiry)
 	if err != nil {
 		t.Fatalf("Signing error: %v", err)
 	}
@@ -102,7 +102,7 @@ func TestRawResourceHandler_ValidSigningWithWrongUUID(t *testing.T) {
 	// valid request with non-existent uuid
 	expiry := time.Now().Add(5 * time.Second)
 
-	signURL, err := restService.generateSignedURL("/raw", "uuid", expiry)
+	signURL, err := restService.generateSignedURL(config.EndpointRaw, "uuid", expiry)
 	if err != nil {
 		t.Fatalf("Signing error: %v", err)
 	}
@@ -136,7 +136,7 @@ func TestRawResourceHandler_Success(t *testing.T) {
 	// valid request
 	expiry := time.Now().Add(5 * time.Second)
 
-	signURL, err := restService.generateSignedURL("/raw", fileUUID, expiry)
+	signURL, err := restService.generateSignedURL(config.EndpointRaw, fileUUID, expiry)
 	if err != nil {
 		t.Fatalf("Signing error: %v", err)
 	}
@@ -164,7 +164,7 @@ func TestRawResourceHandler_DownloadHeader(t *testing.T) {
 	// valid request
 	expiry := time.Now().Add(5 * time.Second)
 
-	signURL, err := restService.generateSignedURL("/raw", fileUUID, expiry)
+	signURL, err := restService.generateSignedURL(config.EndpointRaw, fileUUID, expiry)
 	if err != nil {
 		t.Fatalf("Signing error: %v", err)
 	}

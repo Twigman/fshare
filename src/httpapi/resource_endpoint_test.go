@@ -14,7 +14,7 @@ import (
 
 func TestResourceHandler_MethodNotAllowed(t *testing.T) {
 	s := &httpapi.RESTService{}
-	req := httptest.NewRequest(http.MethodPost, "/r/someuuid", nil)
+	req := httptest.NewRequest(http.MethodPost, config.EndpointView+"someuuid", nil)
 	w := httptest.NewRecorder()
 
 	s.ResourceHandler(w, req)
@@ -37,7 +37,7 @@ func TestResourceHandler_NotFound(t *testing.T) {
 		t.Errorf("Error initialising test services: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/r/invaliduuid", nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointView+"invaliduuid", nil)
 	w := httptest.NewRecorder()
 
 	restService.ResourceHandler(w, req)
@@ -58,7 +58,7 @@ func TestResourceHandler_PrivateUnauthorized(t *testing.T) {
 		t.Fatalf("Setup error: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointView+fileUUID, nil)
 	w := httptest.NewRecorder()
 
 	restService.ResourceHandler(w, req)
@@ -85,7 +85,7 @@ func TestResourceHandler_PrivateWrongKey(t *testing.T) {
 		t.Fatalf("could not add second API key: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointView+fileUUID, nil)
 	w := httptest.NewRecorder()
 
 	req.Header.Set("Authorization", "Bearer 321")
@@ -108,7 +108,7 @@ func TestResourceHandler_PrivateAuthorizedNotTrusted(t *testing.T) {
 		t.Fatalf("Setup error: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointView+fileUUID, nil)
 	req.Header.Set("Authorization", "Bearer "+apiKey)
 	w := httptest.NewRecorder()
 
@@ -130,7 +130,7 @@ func TestResourceHandler_PublicTextFileNotTrusted(t *testing.T) {
 		t.Fatalf("Setup error: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointView+fileUUID, nil)
 	w := httptest.NewRecorder()
 
 	restService.ResourceHandler(w, req)
@@ -154,7 +154,7 @@ func TestResourceHandler_PublicPNGNotTruested(t *testing.T) {
 		t.Fatalf("Setup error: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointView+fileUUID, nil)
 	w := httptest.NewRecorder()
 
 	restService.ResourceHandler(w, req)
@@ -178,7 +178,7 @@ func TestResourceHandler_PublicBinaryDownloadNotTrusted(t *testing.T) {
 		t.Fatalf("Setup error: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointView+fileUUID, nil)
 	w := httptest.NewRecorder()
 
 	restService.ResourceHandler(w, req)
@@ -208,7 +208,7 @@ func TestResourceHandler_PublicFileMissing(t *testing.T) {
 		t.Fatalf("Failed to remove file: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointView+fileUUID, nil)
 	w := httptest.NewRecorder()
 
 	restService.ResourceHandler(w, req)
@@ -242,7 +242,7 @@ func TestResourceHandler_PublicPDFNotTrusted(t *testing.T) {
 		t.Fatalf("Setup error: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointView+fileUUID, nil)
 	w := httptest.NewRecorder()
 
 	restService.ResourceHandler(w, req)
@@ -269,7 +269,7 @@ func TestResourceHandler_PublicPDFTrusted(t *testing.T) {
 		t.Fatalf("Setup error: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointView+fileUUID, nil)
 	w := httptest.NewRecorder()
 
 	restService.ResourceHandler(w, req)
@@ -294,7 +294,7 @@ func TestResourceHandler_PublicSVGTrusted(t *testing.T) {
 		t.Fatalf("Setup error: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointView+fileUUID, nil)
 	w := httptest.NewRecorder()
 
 	restService.ResourceHandler(w, req)
@@ -318,7 +318,7 @@ func TestResourceHandler_PublicSVGNotTrusted(t *testing.T) {
 		t.Fatalf("Setup error: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/r/"+fileUUID, nil)
+	req := httptest.NewRequest(http.MethodGet, config.EndpointView+fileUUID, nil)
 	w := httptest.NewRecorder()
 
 	restService.ResourceHandler(w, req)

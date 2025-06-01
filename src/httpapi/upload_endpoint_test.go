@@ -135,7 +135,7 @@ func TestUploadHandler_WrongMethod(t *testing.T) {
 		t.Fatalf("Can not initialize test services: %v", err)
 	}
 
-	req := httptest.NewRequest("GET", "/upload", nil)
+	req := httptest.NewRequest("GET", config.EndpointUpload, nil)
 	w := httptest.NewRecorder()
 
 	restService.UploadHandler(w, req)
@@ -261,7 +261,7 @@ func TestUploadHandler_MissingAuthHeader(t *testing.T) {
 		t.Fatalf("Setup failed: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/upload", nil)
+	req := httptest.NewRequest(http.MethodPost, config.EndpointUpload, nil)
 	w := httptest.NewRecorder()
 
 	restService.UploadHandler(w, req)

@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/twigman/fshare/src/config"
 )
 
 func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
@@ -19,7 +21,7 @@ func (s *RESTService) ResourceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file_uuid := strings.TrimPrefix(r.URL.Path, "/r/")
+	file_uuid := strings.TrimPrefix(r.URL.Path, config.EndpointView)
 
 	res, err := s.resourceService.GetResourceByUUID(file_uuid)
 	if err != nil || res == nil || !res.IsFile || res.DeletedAt != nil || res.IsBroken {
@@ -103,7 +105,7 @@ func (s *RESTService) renderMediaViewer(w http.ResponseWriter, rUUID string, mim
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 
 	expiry := time.Now().Add(30 * time.Second)
-	signedURL, err := s.generateSignedURL("/raw", rUUID, expiry)
+	signedURL, err := s.generateSignedURL(config.EndpointRaw, rUUID, expiry)
 	if err != nil {
 		writeJSONStatus(w, http.StatusInternalServerError, "Failed to generate signed URL")
 		return

@@ -119,11 +119,11 @@ func startServer(cfg *config.Config, as *store.APIKeyService, rs *store.Resource
 	restService := httpapi.NewRESTService(cfg, as, rs)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/upload", restService.UploadHandler)
-	mux.HandleFunc("/r/", restService.ResourceHandler)
-	mux.HandleFunc("/delete/", restService.DeleteHandler)
-	mux.HandleFunc("/raw/", restService.RawResourceHandler)
-	mux.HandleFunc("/apikey", restService.CreateAPIKeyHandler)
+	mux.HandleFunc(config.EndpointUpload, restService.UploadHandler)
+	mux.HandleFunc(config.EndpointView, restService.ResourceHandler)
+	mux.HandleFunc(config.EndpointDelete, restService.DeleteHandler)
+	mux.HandleFunc(config.EndpointRaw, restService.RawResourceHandler)
+	mux.HandleFunc(config.EndpointAPIKey, restService.CreateAPIKeyHandler)
 
 	// start cleanup worker for autodelete
 	stopCh := make(chan struct{})

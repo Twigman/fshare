@@ -23,7 +23,7 @@ func TestDeleteHandler_WithoutAuth(t *testing.T) {
 		t.Errorf("Test setup error: %v", err)
 	}
 
-	req := httptest.NewRequest("DELETE", "/delete/"+fileUUID, nil)
+	req := httptest.NewRequest("DELETE", config.EndpointDelete+fileUUID, nil)
 	rr := httptest.NewRecorder()
 
 	restService.DeleteHandler(rr, req)
@@ -44,7 +44,7 @@ func TestDeleteHandler_Success(t *testing.T) {
 		t.Errorf("Test setup error: %v", err)
 	}
 
-	req := httptest.NewRequest("DELETE", "/delete/"+fileUUID, nil)
+	req := httptest.NewRequest("DELETE", config.EndpointDelete+fileUUID, nil)
 	rr := httptest.NewRecorder()
 
 	req.Header.Set("Authorization", "Bearer "+apiKey)
@@ -86,7 +86,7 @@ func TestDeleteHandler_WrongKey(t *testing.T) {
 		t.Errorf("Test setup error: %v", err)
 	}
 
-	req := httptest.NewRequest("DELETE", "/delete/"+fileUUID, nil)
+	req := httptest.NewRequest("DELETE", config.EndpointDelete+fileUUID, nil)
 	rr := httptest.NewRecorder()
 
 	req.Header.Set("Authorization", "Bearer 321")
@@ -109,7 +109,7 @@ func TestDeleteHandler_NoExistingUUID(t *testing.T) {
 		t.Errorf("Test setup error: %v", err)
 	}
 
-	req := httptest.NewRequest("DELETE", "/delete/"+fileUUID+"a", nil)
+	req := httptest.NewRequest("DELETE", config.EndpointDelete+fileUUID+"a", nil)
 	rr := httptest.NewRecorder()
 
 	req.Header.Set("Authorization", "Bearer "+apiKey)
@@ -132,7 +132,7 @@ func TestDeleteHandler_WrongMethod(t *testing.T) {
 		t.Errorf("Test setup error: %v", err)
 	}
 
-	req := httptest.NewRequest("GET", "/delete/"+fileUUID, nil)
+	req := httptest.NewRequest("GET", config.EndpointDelete+fileUUID, nil)
 	rr := httptest.NewRecorder()
 
 	req.Header.Set("Authorization", "Bearer "+apiKey)
@@ -185,7 +185,7 @@ func TestDeleteHandler_DeleteHomeDir(t *testing.T) {
 		t.Fatalf("home directory was not created")
 	}
 
-	req := httptest.NewRequest("DELETE", "/delete/"+r.UUID, nil)
+	req := httptest.NewRequest("DELETE", config.EndpointDelete+r.UUID, nil)
 	rr := httptest.NewRecorder()
 
 	req.Header.Set("Authorization", "Bearer "+apiKey)
@@ -214,7 +214,7 @@ func TestDeleteHandler_TwoTimes(t *testing.T) {
 		t.Errorf("Test setup error: %v", err)
 	}
 
-	req := httptest.NewRequest("DELETE", "/delete/"+fileUUID, nil)
+	req := httptest.NewRequest("DELETE", config.EndpointDelete+fileUUID, nil)
 	rr := httptest.NewRecorder()
 
 	req.Header.Set("Authorization", "Bearer "+apiKey)
