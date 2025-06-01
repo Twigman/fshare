@@ -153,9 +153,9 @@ The application can be configured using a JSON file. Below is a description of a
 | Field                   | Type   | Description                                                                 |
 |-------------------------|--------|-----------------------------------------------------------------------------|
 | `port`                  | int    | Port the HTTP server will listen on                                         |
-| `upload_path`           | string | Local directory where uploaded files are stored (must exist)                |
+| `data_path`             | string | Local directory where `fshare.sqlite`, `.env` and `init_data.env` are stored (must exist)                |
+| `upload_path`           | string | Local directory where uploaded files are stored                             |
 | `max_file_size_in_mb`   | int    | Maximum allowed size per file upload, in megabytes                          |
-| `sqlite_db_path`        | string | Path to the SQLite database file used to store resources and API keys       |
 | `autodelete_interval_in_sec`  | int    | Interval (in seconds) at which expired files (past their TTL) are automatically deleted            |
 
 ## 🏁 Command-Line Flags
