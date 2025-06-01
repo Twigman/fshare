@@ -1,0 +1,77 @@
+#!/bin/bash
+
+set -e
+
+# === Adjust these variables if needed ===
+BINARY_NAME="fshare-linux-amd64"
+USER_NAME="$(whoami)"
+
+# === Install paths ===
+BIN_DIR="/opt/fshare"
+CONFIG_DIR="/etc/fshare"
+DATA_DIR="/var/lib/fshare"
+LOG_DIR="/var/log/fshare"
+
+# === Copy binary ===
+echo "Installing binary to $BIN_DIR..."
+sudo mkdir -p "$BIN_DIR"
+sudo cp "$BINARY_NAME" "$BIN_DIR/$BINARY_NAME"
+sudo chmod +x "$BIN_DIR/$BINARY_NAME"
+
+# === Create config directory ===
+echo "Creating config directory $CONFIG_DIR..."
+sudo mkdir -p "$CONFIG_DIR"
+if [ ! -f "$CONFIG_DIR/config.json" ]; then
+  echo "🌱 Creating example config.json..."
+  sudo tee "$CONFIG_DIR/config.json" > /dev/null <<EOF
+{
+    "port": 8182,
+    "upload_path": "$DATA_DIR/upload",
+    "max_file_size_in_mb": 10,
+    "sqlite_db_path": "$DATA_DIR/fshare.sqlite",
+    "autodelete_interval_in_sec": 300,
+    "env_path": "$DATA_DIR/secret.env"
+}
+EOF
+fi
+
+# === Create data directory ===
+echo "Creating data directory $DATA_DIR..."
+sudo mkdir -p "$DATA_DIR"
+sudo chown -R "$USER_NAME":"$USER_NAME" "$DATA_DIR"
+
+# === Create log directory ===
+echo "Creating log directory $LOG_DIR..."
+sudo mkdir -p "$LOG_DIR"
+sudo chown "$USER_NAME":"$USER_NAME" "$LOG_DIR"
+
+# === Create systemd service ===
+echo "Installing systemd service..."
+
+SERVICE_FILE="/etc/systemd/system/fshare.service"
+
+sudo tee "$SERVICE_FILE" > /dev/null <<EOF
+[Unit]
+Description=Fshare Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=$BIN_DIR/$BINARY_NAME --config $CONFIG_DIR/config.json
+WorkingDirectory=$BIN_DIR
+Restart=on-failure
+User=$USER_NAME
+Group=$USER_NAME
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# === Enable and start service ===
+echo "Enabling and starting fshare service..."
+sudo systemctl daemon-reload
+sudo systemctl enable fshare
+sudo systemctl restart fshare
+
+echo "fshare is installed and running!"
+echo "Logs: journalctl -u fshare -f"
