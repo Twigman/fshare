@@ -46,7 +46,7 @@ if [ ! -f "$CONFIG_DIR/config.json" ]; then
   sudo tee "$CONFIG_DIR/config.json" > /dev/null <<EOF
 {
     "port": 8182,
-    "data_path": "$DATA_DIR"
+    "data_path": "$DATA_DIR/data"
     "upload_path": "$DATA_DIR/upload",
     "max_file_size_in_mb": 10,
     "autodelete_interval_in_sec": 300,
