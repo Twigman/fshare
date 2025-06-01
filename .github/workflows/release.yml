@@ -46,7 +46,7 @@ jobs:
         if [ "${{ matrix.goarch }}" == "arm64" ]; then
           export CC=aarch64-linux-gnu-gcc
         fi
-        
+
         CGO_ENABLED=1 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/$output_name ./src
 
     - name: Upload artifact
@@ -103,7 +103,7 @@ jobs:
     - name: Build and Push Docker Image
       uses: docker/build-push-action@v5
       with:
-        context: .
+        context: .github/build/Dockerfile
         push: true
         platforms: linux/amd64,linux/arm64
         tags: |

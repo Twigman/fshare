@@ -1,8 +1,10 @@
-FROM alpine:latest
+# debian for cgo
+FROM debian:bookworm-slim
+# updates
+RUN apt-get update && apt-get upgrade -y && apt-get clean
 
 WORKDIR /app
 
-# Build-Arg from workflow
 ARG TARGETARCH
 COPY dist/binaries-fshare-linux-${TARGETARCH}/fshare-linux-${TARGETARCH} /app/fshare
 
