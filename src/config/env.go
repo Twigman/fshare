@@ -37,7 +37,7 @@ func LoadOrCreateEnv(path string) (*Env, error) {
 
 	env := &Env{HMACSecret: secret}
 
-	// Datei sicher schreiben (z. B. 0600)
+	// save secret in file
 	if err := os.WriteFile(absPath, []byte(env.HMACSecret+"\n"), 0600); err != nil {
 		return env, fmt.Errorf("could not write secret file to: %w", err)
 	}
