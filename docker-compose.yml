@@ -4,6 +4,6 @@ services:
     container_name: fshare
     command: --config /data/config.json --api-key 123 --comment "initial key" --highly-trusted
     volumes:
-      - ./data:/data
+      - ./data:/app/data
     ports:
       - "8182:8080"
