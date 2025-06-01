@@ -51,7 +51,7 @@ go run ./src --config ./data/config.json
 ### ⬆️ Upload a file
 
 ```bash
-curl -X POST http://localhost:8080/upload \
+curl -X POST http://localhost:8080/fshare/upload \
      -H "Authorization: Bearer 123" \
      -F "file=@./data/config.json" \
      -F "is_private=false" \
@@ -67,13 +67,13 @@ curl -X POST http://localhost:8080/upload \
 ### 📎 Share link:
 
 ```
-http://localhost:8080/r/0196af20-4ca0-7e02-9441-dfd94cd75b39
+http://localhost:8080/fshare/v/0196af20-4ca0-7e02-9441-dfd94cd75b39
 ```
 
 ### 🗑 Delete a file:
 
 ```bash
-curl -X DELETE http://localhost:8080/delete/0196af20-4ca0-7e02-9441-dfd94cd75b39 \
+curl -X DELETE http://localhost:8080/fshare/delete/0196af20-4ca0-7e02-9441-dfd94cd75b39 \
      -H "Authorization: Bearer 123"
 ```
 
@@ -121,7 +121,7 @@ Create a new API key. Requires a valid **highly trusted** API key for authorizat
 #### Example Request (cURL)
 
 ```bash
-curl -X POST http://localhost:8080/apikey \
+curl -X POST http://localhost:8080/fshare/apikey \
      -H "Authorization: Bearer 123" \
      -H "Content-Type: application/json" \
      -d '{
