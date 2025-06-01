@@ -1,0 +1,68 @@
+#!/bin/bash
+
+set -e
+
+# === Adjust these paths if needed ===
+BIN_DIR="/opt/fshare"
+CONFIG_DIR="/etc/fshare"
+DATA_DIR="/var/lib/fshare"
+LOG_DIR="/var/log/fshare"
+SERVICE_FILE="/etc/systemd/system/fshare.service"
+
+echo "This will uninstall fshare and remove all related files:"
+echo " - Binary in $BIN_DIR"
+echo " - Configs in $CONFIG_DIR"
+echo " - Data in $DATA_DIR"
+echo " - Logs in $LOG_DIR"
+echo " - systemd service $SERVICE_FILE"
+echo
+read -p "Are you sure? [y/N] " confirm
+
+if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+  echo "Uninstall aborted."
+  exit 1
+fi
+
+# === Stop and disable systemd service ===
+echo "Stopping fshare service..."
+if systemctl is-active --quiet fshare; then
+  sudo systemctl stop fshare
+fi
+
+echo "Disabling fshare service..."
+if systemctl is-enabled --quiet fshare; then
+  sudo systemctl disable fshare
+fi
+
+# Remove systemd service file
+if [ -f "$SERVICE_FILE" ]; then
+  echo "Removing systemd service file..."
+  sudo rm "$SERVICE_FILE"
+  sudo systemctl daemon-reload
+fi
+
+# Remove binary directory
+if [ -d "$BIN_DIR" ]; then
+  echo "Removing binary directory..."
+  sudo rm -rf "$BIN_DIR"
+fi
+
+# Remove config directory
+if [ -d "$CONFIG_DIR" ]; then
+  echo "Removing config directory..."
+  sudo rm -rf "$CONFIG_DIR"
+fi
+
+# Remove data directory
+if [ -d "$DATA_DIR" ]; then
+  echo "Removing data directory..."
+  sudo rm -rf "$DATA_DIR"
+fi
+
+# Remove log directory
+if [ -d "$LOG_DIR" ]; then
+  echo "Removing log directory..."
+  sudo rm -rf "$LOG_DIR"
+fi
+
+echo "fshare uninstalled successfully."
