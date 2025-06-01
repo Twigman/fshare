@@ -14,9 +14,9 @@ import (
 )
 
 func TestCreateAPIKeyHandler(t *testing.T) {
-	uploadDir := t.TempDir()
-	cfg := &config.Config{UploadPath: uploadDir}
-	db, err := store.NewDB(filepath.Join(uploadDir, "test_db.sqlite"))
+	dataDir := t.TempDir()
+	cfg := &config.Config{DataPath: dataDir, UploadPath: filepath.Join(dataDir, "upload")}
+	db, err := store.NewDB(dataDir)
 	if err != nil {
 		t.Fatalf("failed to create db: %v", err)
 	}
@@ -24,6 +24,11 @@ func TestCreateAPIKeyHandler(t *testing.T) {
 	as := store.NewAPIKeyService(db)
 	rs := store.NewResourceService(cfg, db)
 	restService := httpapi.NewRESTService(cfg, as, rs)
+
+	err = rs.CreateUploadDir()
+	if err != nil {
+		t.Fatalf("failed to create upload dir: %v", err)
+	}
 
 	// create initial trusted and untrusted API keys
 	_, err = as.AddAPIKey("trusted", "trusted comment", true, nil)

@@ -1,11 +1,13 @@
 package config
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
+
+	"github.com/twigman/fshare/src/internal/apperror"
+	"github.com/twigman/fshare/src/utils"
 )
 
 type Env struct {
@@ -13,26 +15,46 @@ type Env struct {
 }
 
 func LoadOrCreateEnv(path string) (*Env, error) {
-	if _, err := os.Stat(path); err == nil {
+	fmt.Println("!!!!!!!!!!!!!!!!! NOW !!!!!!!!!!!!!!!!!!!!")
+	filePath := filepath.Join(path, ".env")
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return nil, apperror.ErrResourceResolvePath
+	}
+
+	if _, err := os.Stat(absPath); err == nil {
 		// read
-		data, err := os.ReadFile(path)
+		data, err := os.ReadFile(absPath)
 		if err != nil {
 			return nil, fmt.Errorf("could not read secret file: %w", err)
 		}
 		return &Env{HMACSecret: strings.TrimSpace(string(data))}, nil
 	}
 
-	// does not exist -> generate
-	secretBytes := make([]byte, 32)
-	if _, err := rand.Read(secretBytes); err != nil {
-		return nil, fmt.Errorf("could not generate secret: %w", err)
+	secret, err := utils.GenerateSecret(32)
+	if err != nil {
+		return nil, err
 	}
 
-	env := &Env{HMACSecret: hex.EncodeToString(secretBytes)}
+	env := &Env{HMACSecret: secret}
 
 	// Datei sicher schreiben (z. B. 0600)
-	if err := os.WriteFile(path, []byte(env.HMACSecret+"\n"), 0600); err != nil {
+	if err := os.WriteFile(absPath, []byte(env.HMACSecret+"\n"), 0600); err != nil {
 		return env, fmt.Errorf("could not write secret file to: %w", err)
 	}
 	return env, nil
+}
+
+func CreateInitDataEnv(path string, data string) (string, error) {
+	filePath := filepath.Join(path, "init_data.env")
+	absPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return "", apperror.ErrResourceResolvePath
+	}
+
+	err = os.WriteFile(absPath, []byte(data), 0o600)
+	if err != nil {
+		return "", err
+	}
+	return absPath, nil
 }

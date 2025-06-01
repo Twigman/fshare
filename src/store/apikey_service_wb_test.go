@@ -1,7 +1,6 @@
 package store
 
 import (
-	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -22,8 +21,7 @@ func TestAPIKeyService_AddAPIKey(t *testing.T) {
 		{"not allowed special chars", "azAZ09-_.=", "test", false, true, "One or more characters are not permitted"},
 	}
 	uploadDir := t.TempDir()
-	dbPath := filepath.Join(uploadDir, "test_db.sqlite")
-	db, err := NewDB(dbPath)
+	db, err := NewDB(uploadDir)
 	if err != nil {
 		t.Fatalf("could not init test db %v", err)
 	}
@@ -93,8 +91,7 @@ func TestAPIKeyService_AddAPIKey(t *testing.T) {
 
 func TestAPIKeyService_AnyAPIKeyExists(t *testing.T) {
 	uploadDir := t.TempDir()
-	dbPath := filepath.Join(uploadDir, "test_db.sqlite")
-	db, err := NewDB(dbPath)
+	db, err := NewDB(uploadDir)
 	if err != nil {
 		t.Fatalf("could not init test db %v", err)
 	}
@@ -113,8 +110,7 @@ func TestAPIKeyService_AnyAPIKeyExists(t *testing.T) {
 
 func TestAPIKeyService_IsAPIKeyHighlyTrusted(t *testing.T) {
 	uploadDir := t.TempDir()
-	dbPath := filepath.Join(uploadDir, "test_db.sqlite")
-	db, err := NewDB(dbPath)
+	db, err := NewDB(uploadDir)
 	if err != nil {
 		t.Fatalf("could not init test db %v", err)
 	}
@@ -161,8 +157,7 @@ func TestAPIKeyService_IsAPIKeyHighlyTrusted(t *testing.T) {
 
 func TestAPIKeyService_GetUUIDForAPIKey(t *testing.T) {
 	uploadDir := t.TempDir()
-	dbPath := filepath.Join(uploadDir, "test_db.sqlite")
-	db, err := NewDB(dbPath)
+	db, err := NewDB(uploadDir)
 	if err != nil {
 		t.Fatalf("could not init test db %v", err)
 	}

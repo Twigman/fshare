@@ -17,13 +17,12 @@ import (
 )
 
 func TestUploadHandler_Success(t *testing.T) {
-	uploadDir := t.TempDir()
+	dataDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:      uploadDir,
+		DataPath:        dataDir,
+		UploadPath:      filepath.Join(dataDir, "upload"),
 		MaxFileSizeInMB: 5,
 		Port:            8080,
-		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
-		EnvPath:         filepath.Join(uploadDir, "test.env"),
 	}
 
 	as, rs, restService, err := httpapi.InitTestServices(cfg)
@@ -38,8 +37,13 @@ func TestUploadHandler_Success(t *testing.T) {
 	}
 
 	// create home dir
-	if err := os.MkdirAll(filepath.Join(uploadDir, key.UUID), 0o700); err != nil {
-		t.Fatalf("Error creating home dir: %v", err)
+	err = rs.CreateUploadDir()
+	if err != nil {
+		t.Fatalf("Can not create upload dir: %v", err)
+	}
+
+	if _, err = rs.GetOrCreateHomeDir(key.HashedKey); err != nil {
+		t.Fatalf("Can not create home dir: %v", err)
 	}
 
 	ts := httptest.NewServer(http.HandlerFunc(restService.UploadHandler))
@@ -84,7 +88,7 @@ func TestUploadHandler_Success(t *testing.T) {
 		t.Errorf("Expected status %d, got %d", http.StatusCreated, resp.StatusCode)
 	}
 
-	savedPath := filepath.Join(uploadDir, key.UUID, testFilename)
+	savedPath := filepath.Join(cfg.UploadPath, key.UUID, testFilename)
 	content, err := os.ReadFile(savedPath)
 	if err != nil {
 		t.Fatalf("File not saved: %v", err)
@@ -123,7 +127,8 @@ func TestUploadHandler_Success(t *testing.T) {
 }
 
 func TestUploadHandler_WrongMethod(t *testing.T) {
-	cfg := &config.Config{UploadPath: "./doesnotmatter/"}
+	dataDir := t.TempDir()
+	cfg := &config.Config{DataPath: dataDir, UploadPath: filepath.Join(dataDir, "upload")}
 
 	_, _, restService, err := httpapi.InitTestServices(cfg)
 	if err != nil {
@@ -142,9 +147,10 @@ func TestUploadHandler_WrongMethod(t *testing.T) {
 }
 
 func TestUploadHandler_TooLarge(t *testing.T) {
-	uploadDir := t.TempDir()
+	dataDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:      uploadDir,
+		DataPath:        dataDir,
+		UploadPath:      filepath.Join(dataDir, "upload"),
 		MaxFileSizeInMB: 1,
 		Port:            8080,
 	}
@@ -199,9 +205,10 @@ func TestUploadHandler_TooLarge(t *testing.T) {
 }
 
 func TestUploadHandler_MissingFileField(t *testing.T) {
-	uploadDir := t.TempDir()
+	dataDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:      uploadDir,
+		DataPath:        dataDir,
+		UploadPath:      filepath.Join(dataDir, "upload"),
 		MaxFileSizeInMB: 5,
 	}
 	as, _, restService, err := httpapi.InitTestServices(cfg)
@@ -243,8 +250,10 @@ func TestUploadHandler_MissingFileField(t *testing.T) {
 }
 
 func TestUploadHandler_MissingAuthHeader(t *testing.T) {
+	dataDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath: t.TempDir(),
+		DataPath:   dataDir,
+		UploadPath: filepath.Join(dataDir, "upload"),
 	}
 
 	_, _, restService, err := httpapi.InitTestServices(cfg)
@@ -264,13 +273,12 @@ func TestUploadHandler_MissingAuthHeader(t *testing.T) {
 }
 
 func TestUploadHandler_UnregisteredAPIKeyHeader(t *testing.T) {
-	uploadDir := t.TempDir()
+	dataDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:      uploadDir,
+		DataPath:        dataDir,
+		UploadPath:      filepath.Join(dataDir, "upload"),
 		MaxFileSizeInMB: 5,
 		Port:            8080,
-		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
-		EnvPath:         filepath.Join(uploadDir, "test.env"),
 	}
 
 	as, _, restService, err := httpapi.InitTestServices(cfg)
@@ -328,13 +336,12 @@ func TestUploadHandler_UnregisteredAPIKeyHeader(t *testing.T) {
 }
 
 func TestUploadHandler_HiddenFile(t *testing.T) {
-	uploadDir := t.TempDir()
+	dataDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:      uploadDir,
+		DataPath:        dataDir,
+		UploadPath:      filepath.Join(dataDir, "upload"),
 		MaxFileSizeInMB: 5,
 		Port:            8080,
-		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
-		EnvPath:         filepath.Join(uploadDir, "test.env"),
 	}
 
 	as, rs, restService, err := httpapi.InitTestServices(cfg)
@@ -394,13 +401,11 @@ func TestUploadHandler_HiddenFile(t *testing.T) {
 }
 
 func TestUploadHandler_InvalidFilename_1(t *testing.T) {
-	uploadDir := t.TempDir()
+	dataDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:      uploadDir,
+		DataPath:        dataDir,
 		MaxFileSizeInMB: 5,
 		Port:            8080,
-		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
-		EnvPath:         filepath.Join(uploadDir, "test.env"),
 	}
 
 	as, rs, restService, err := httpapi.InitTestServices(cfg)

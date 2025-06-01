@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -13,8 +14,9 @@ type SQLite struct {
 	db *sql.DB
 }
 
-func NewDB(path string) (*SQLite, error) {
-	db, err := sql.Open("sqlite3", path)
+func NewDB(dataPath string) (*SQLite, error) {
+	dbPath := filepath.Join(dataPath, "fshare.sqlite")
+	db, err := sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, err
 	}

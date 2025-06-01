@@ -8,10 +8,9 @@ import (
 
 type Config struct {
 	Port            int    `json:"port"`
+	DataPath        string `json:"data_path"`
 	UploadPath      string `json:"upload_path"`
 	MaxFileSizeInMB int64  `json:"max_file_size_in_mb"` // 0 = no limit
-	SQLitePath      string `json:"sqlite_db_path"`
-	EnvPath         string `json:"env_path"`
 	//ContinuousFileValidation bool   `json:"continuous_file_validation"`
 	//SpacePerUserInMB         int    `json:"space_per_user_in_mb"`
 	AutoDeleteIntervalInSec int `json:"autodelete_interval_in_sec"`

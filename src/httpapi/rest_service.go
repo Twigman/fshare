@@ -55,7 +55,7 @@ func (s *RESTService) authorizeBearer(w http.ResponseWriter, r *http.Request) (s
 
 func (s *RESTService) generateSignedURL(endpoint string, uuid string, exp time.Time) (string, error) {
 	if s.env == nil {
-		env, err := config.LoadOrCreateEnv(s.config.EnvPath)
+		env, err := config.LoadOrCreateEnv(s.config.DataPath)
 		if err != nil {
 			return "", err
 		}

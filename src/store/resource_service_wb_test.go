@@ -12,7 +12,7 @@ import (
 )
 
 func initServices(cfg *config.Config) (*ResourceService, *APIKey, error) {
-	db, err := NewDB(cfg.SQLitePath)
+	db, err := NewDB(cfg.DataPath)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -29,14 +29,14 @@ func initServices(cfg *config.Config) (*ResourceService, *APIKey, error) {
 }
 
 func TestFileService_SaveUploadedFile(t *testing.T) {
-	uploadDir := t.TempDir()
+	dataDir := t.TempDir()
 	const testFilename = "test.txt"
 
 	cfg := &config.Config{
-		UploadPath:      uploadDir,
+		DataPath:        dataDir,
+		UploadPath:      filepath.Join(dataDir, "upload"),
 		MaxFileSizeInMB: 2,
 		Port:            8080,
-		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
 	}
 
 	// Testfile
@@ -55,8 +55,13 @@ func TestFileService_SaveUploadedFile(t *testing.T) {
 		AutoDeleteAt: nil,
 	}
 
+	err = rs.CreateUploadDir()
+	if err != nil {
+		t.Fatalf("Error creating upload dir: %v", err)
+	}
+
 	// create dir
-	err = os.Mkdir(filepath.Join(uploadDir, key.UUID), 0o700)
+	err = os.Mkdir(filepath.Join(cfg.UploadPath, key.UUID), 0o700)
 	if err != nil {
 		t.Fatalf("Error creating home dir: %v", err)
 	}
@@ -67,7 +72,7 @@ func TestFileService_SaveUploadedFile(t *testing.T) {
 		t.Fatalf("Error saving file: %v", err)
 	}
 
-	savedPath := filepath.Join(uploadDir, key.UUID, testFilename)
+	savedPath := filepath.Join(cfg.UploadPath, key.UUID, testFilename)
 	data, err := os.ReadFile(savedPath)
 	if err != nil {
 		t.Fatalf("File was not saved: %v", err)
@@ -79,13 +84,14 @@ func TestFileService_SaveUploadedFile(t *testing.T) {
 }
 
 func TestFileService_GetOrCreateHomeDir(t *testing.T) {
-	uploadDir := t.TempDir()
+	dataDir := t.TempDir()
 
 	// Setup: Config & DB
 	cfg := &config.Config{
-		UploadPath: uploadDir,
+		DataPath:   dataDir,
+		UploadPath: filepath.Join(dataDir, "upload"),
 	}
-	db, err := NewDB(filepath.Join(uploadDir, "test.sqlite"))
+	db, err := NewDB(cfg.DataPath)
 	if err != nil {
 		t.Fatalf("DB init error: %v", err)
 	}
@@ -110,6 +116,11 @@ func TestFileService_GetOrCreateHomeDir(t *testing.T) {
 		t.Fatalf("insertAPIKey failed: %v", err)
 	}
 
+	err = rs.CreateUploadDir()
+	if err != nil {
+		t.Fatalf("CreateUploadDir error: %v", err)
+	}
+
 	// create home dir
 	resource, err := rs.GetOrCreateHomeDir(hashedKey)
 	if err != nil {
@@ -125,7 +136,7 @@ func TestFileService_GetOrCreateHomeDir(t *testing.T) {
 	}
 
 	// check folder
-	expectedPath := filepath.Join(uploadDir, apiKeyUUID)
+	expectedPath := filepath.Join(cfg.UploadPath, apiKeyUUID)
 	if stat, err := os.Stat(expectedPath); err != nil {
 		t.Errorf("home directory not created: %v", err)
 	} else if !stat.IsDir() {
@@ -143,14 +154,14 @@ func TestFileService_GetOrCreateHomeDir(t *testing.T) {
 }
 
 func TestFileService_SaveUploadedFileMultipleTimes(t *testing.T) {
-	uploadDir := t.TempDir()
+	dataDir := t.TempDir()
 	const testFilename = "test.txt"
 
 	cfg := &config.Config{
-		UploadPath:      uploadDir,
+		DataPath:        dataDir,
+		UploadPath:      filepath.Join(dataDir, "upload"),
 		MaxFileSizeInMB: 2,
 		Port:            8080,
-		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
 	}
 
 	rs, key, err := initServices(cfg)
@@ -158,8 +169,13 @@ func TestFileService_SaveUploadedFileMultipleTimes(t *testing.T) {
 		t.Fatalf("Error initializing test services: %v", err)
 	}
 
+	err = rs.CreateUploadDir()
+	if err != nil {
+		t.Fatalf("Error creating upload dir: %v", err)
+	}
+
 	// create dir
-	err = os.Mkdir(filepath.Join(uploadDir, key.UUID), 0o700)
+	err = os.Mkdir(filepath.Join(cfg.UploadPath, key.UUID), 0o700)
 	if err != nil {
 		t.Fatalf("Error creating home dir: %v", err)
 	}
@@ -190,7 +206,7 @@ func TestFileService_SaveUploadedFileMultipleTimes(t *testing.T) {
 			t.Fatalf("Error loading resource from db: %v", err)
 		}
 
-		savedPath := filepath.Join(uploadDir, key.UUID, r.Name)
+		savedPath := filepath.Join(cfg.UploadPath, key.UUID, r.Name)
 		data, err := os.ReadFile(savedPath)
 		if err != nil {
 			t.Fatalf("File was not saved: %v", err)
@@ -203,14 +219,13 @@ func TestFileService_SaveUploadedFileMultipleTimes(t *testing.T) {
 }
 
 func TestCleanupExpiredFiles(t *testing.T) {
-	uploadDir := t.TempDir()
-	dbPath := filepath.Join(uploadDir, "test_db.sqlite")
-	db, err := NewDB(dbPath)
+	dataDir := t.TempDir()
+	db, err := NewDB(dataDir)
 	if err != nil {
 		t.Fatalf("failed to create db: %v", err)
 	}
 
-	cfg := &config.Config{UploadPath: uploadDir}
+	cfg := &config.Config{DataPath: dataDir, UploadPath: filepath.Join(dataDir, "upload")}
 	rs := NewResourceService(cfg, db)
 	as := NewAPIKeyService(db)
 
@@ -263,7 +278,7 @@ func TestCleanupExpiredFiles(t *testing.T) {
 			}
 
 			// Create file
-			homeDir := filepath.Join(uploadDir, key.UUID)
+			homeDir := filepath.Join(cfg.UploadPath, key.UUID)
 			_ = os.MkdirAll(homeDir, 0o755)
 			testFile := filepath.Join(homeDir, tt.resource.Name)
 			os.WriteFile(testFile, []byte("test"), 0o644)

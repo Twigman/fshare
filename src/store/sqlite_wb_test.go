@@ -1,15 +1,13 @@
 package store
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 )
 
 func TestFindFilesForDeletion(t *testing.T) {
 	tmpDir := t.TempDir()
-	dbPath := filepath.Join(tmpDir, "test.sqlite")
-	db, err := NewDB(dbPath)
+	db, err := NewDB(tmpDir)
 	if err != nil {
 		t.Fatalf("failed to create db: %v", err)
 	}

@@ -14,7 +14,7 @@ import (
 )
 
 func InitTestServices(cfg *config.Config) (*store.APIKeyService, *store.ResourceService, *RESTService, error) {
-	db, err := store.NewDB(cfg.SQLitePath)
+	db, err := store.NewDB(cfg.DataPath)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -27,28 +27,32 @@ func InitTestServices(cfg *config.Config) (*store.APIKeyService, *store.Resource
 	return as, rs, restService, nil
 }
 
-func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, isPrivate bool, keyHighlyTrusted bool) (*RESTService, *store.ResourceService, *store.APIKeyService, *store.APIKey, string, error) {
+func SetupExistingTestUpload(dataDir string, apiKey string, filename string, isPrivate bool, keyHighlyTrusted bool) (*RESTService, *store.ResourceService, *store.APIKeyService, *store.APIKey, *config.Config, string, error) {
 	cfg := &config.Config{
-		UploadPath:      uploadDir,
+		DataPath:        dataDir,
+		UploadPath:      filepath.Join(dataDir, "upload"),
 		MaxFileSizeInMB: 5,
 		Port:            8080,
-		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
-		EnvPath:         filepath.Join(uploadDir, "test.env"),
 	}
 
 	as, rs, restService, err := InitTestServices(cfg)
 	if err != nil {
-		return nil, nil, nil, nil, "", err
+		return nil, nil, nil, nil, nil, "", err
 	}
 
 	key, err := as.AddAPIKey(apiKey, "test key", keyHighlyTrusted, nil)
 	if err != nil {
-		return nil, nil, nil, nil, "", err
+		return nil, nil, nil, nil, nil, "", err
+	}
+
+	err = rs.CreateUploadDir()
+	if err != nil {
+		return nil, nil, nil, nil, nil, "", err
 	}
 
 	_, err = rs.GetOrCreateHomeDir(key.HashedKey)
 	if err != nil {
-		return nil, nil, nil, nil, "", err
+		return nil, nil, nil, nil, nil, "", err
 	}
 
 	content := []byte("Hello World")
@@ -63,10 +67,10 @@ func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, i
 
 	fileUUID, err := rs.SaveUploadedFile(file, r, false)
 	if err != nil {
-		return nil, nil, nil, nil, "", err
+		return nil, nil, nil, nil, nil, "", err
 	}
 
-	return restService, rs, as, key, fileUUID, nil
+	return restService, rs, as, key, cfg, fileUUID, nil
 }
 
 // Tests valid url
@@ -74,13 +78,12 @@ func SetupExistingTestUpload(uploadDir string, apiKey string, filename string, i
 // manipulated expires
 func TestValidateSignedRequest(t *testing.T) {
 	// setup
-	uploadDir := t.TempDir()
+	dataDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath:      uploadDir,
+		DataPath:        dataDir,
+		UploadPath:      filepath.Join(dataDir, "upload"),
 		MaxFileSizeInMB: 5,
 		Port:            8080,
-		SQLitePath:      filepath.Join(uploadDir, "test_db.sqlite"),
-		EnvPath:         filepath.Join(uploadDir, "test.env"),
 	}
 	_, _, s, err := InitTestServices(cfg)
 	if err != nil {

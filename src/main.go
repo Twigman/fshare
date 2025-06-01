@@ -13,6 +13,7 @@ import (
 	"github.com/twigman/fshare/src/config"
 	"github.com/twigman/fshare/src/httpapi"
 	"github.com/twigman/fshare/src/store"
+	"github.com/twigman/fshare/src/utils"
 )
 
 func main() {
@@ -44,7 +45,7 @@ func main() {
 	/******************************
 	 * db
 	 ******************************/
-	db, err := store.NewDB(cfg.SQLitePath)
+	db, err := store.NewDB(cfg.DataPath)
 	if err != nil {
 		log.Fatalf("Error loading sqlite: %v", err)
 	}
@@ -78,7 +79,24 @@ func main() {
 	}
 
 	if !as.AnyAPIKeyExists() {
-		log.Fatalf("No API key exists. Please provide an API key when starting the service by using the parameters --api-key and --comment.")
+		// generate first API key
+		log.Printf("No API key exists and no one was provided as a parameter.")
+		key, err := utils.GenerateSecret(32)
+		if err != nil {
+			log.Fatalf("Could not generate key: %v", err)
+		}
+
+		_, err = as.AddAPIKey(key, "initial key", true, nil)
+		if err != nil {
+			log.Fatalf("Could not register key")
+		}
+
+		initPath, err := config.CreateInitDataEnv(cfg.DataPath, key)
+		if err != nil {
+			log.Fatalf("Could not save initial key: %v", err)
+		}
+
+		log.Printf("Initial API key generated and saved to: %s\n", initPath)
 	}
 
 	/******************************

@@ -13,10 +13,10 @@ import (
 )
 
 func TestRawResourceHandler_MethodNotAllowed(t *testing.T) {
-	uploadDir := t.TempDir()
+	dataDir := t.TempDir()
 	cfg := &config.Config{
-		UploadPath: uploadDir,
-		SQLitePath: filepath.Join(uploadDir, "test_db.sqlite"),
+		DataPath:   dataDir,
+		UploadPath: filepath.Join(dataDir, "upload"),
 	}
 	_, _, restService, err := InitTestServices(cfg)
 	if err != nil {
@@ -34,8 +34,8 @@ func TestRawResourceHandler_MethodNotAllowed(t *testing.T) {
 }
 
 func TestRawResourceHandler_Unauthorized(t *testing.T) {
-	uploadDir := t.TempDir()
-	restService, _, _, _, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", "test.txt", false, false)
+	dataDir := t.TempDir()
+	restService, _, _, _, _, fileUUID, err := SetupExistingTestUpload(dataDir, "apikey", "test.txt", false, false)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -52,15 +52,15 @@ func TestRawResourceHandler_Unauthorized(t *testing.T) {
 }
 
 func TestRawResourceHandler_FileMissing(t *testing.T) {
-	uploadDir := t.TempDir()
+	dataDir := t.TempDir()
 	filename := "missing.txt"
-	restService, rs, _, key, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", filename, false, false)
+	restService, rs, _, key, cfg, fileUUID, err := SetupExistingTestUpload(dataDir, "apikey", filename, false, false)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
 
 	// delete file
-	filePath := filepath.Join(uploadDir, key.UUID, filename)
+	filePath := filepath.Join(cfg.UploadPath, key.UUID, filename)
 	if err := os.Remove(filePath); err != nil && !os.IsNotExist(err) {
 		t.Fatalf("Remove error: %v", err)
 	}
@@ -93,8 +93,8 @@ func TestRawResourceHandler_FileMissing(t *testing.T) {
 }
 
 func TestRawResourceHandler_ValidSigningWithWrongUUID(t *testing.T) {
-	uploadDir := t.TempDir()
-	restService, rs, _, _, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", "test.txt", false, false)
+	dataDir := t.TempDir()
+	restService, rs, _, _, _, fileUUID, err := SetupExistingTestUpload(dataDir, "apikey", "test.txt", false, false)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -127,8 +127,8 @@ func TestRawResourceHandler_ValidSigningWithWrongUUID(t *testing.T) {
 }
 
 func TestRawResourceHandler_Success(t *testing.T) {
-	uploadDir := t.TempDir()
-	restService, _, _, _, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", "hello.txt", false, false)
+	dataDir := t.TempDir()
+	restService, _, _, _, _, fileUUID, err := SetupExistingTestUpload(dataDir, "apikey", "hello.txt", false, false)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
@@ -155,8 +155,8 @@ func TestRawResourceHandler_Success(t *testing.T) {
 }
 
 func TestRawResourceHandler_DownloadHeader(t *testing.T) {
-	uploadDir := t.TempDir()
-	restService, _, _, _, fileUUID, err := SetupExistingTestUpload(uploadDir, "apikey", "archive.zip", false, false)
+	dataDir := t.TempDir()
+	restService, _, _, _, _, fileUUID, err := SetupExistingTestUpload(dataDir, "apikey", "archive.zip", false, false)
 	if err != nil {
 		t.Fatalf("Setup error: %v", err)
 	}
