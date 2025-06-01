@@ -18,11 +18,16 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        goos: [linux, windows, darwin]
+        goos: [linux]
         goarch: [amd64, arm64]
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Install Cross-Compiler
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y gcc-aarch64-linux-gnu
 
     - name: Set up Go
       uses: actions/setup-go@v5
@@ -33,10 +38,16 @@ jobs:
       run: |
         mkdir -p dist
         output_name=${PROJECT}-${{ matrix.goos }}-${{ matrix.goarch }}
-        if [ "${{ matrix.goos }}" == "windows" ]; then
-          output_name="${output_name}.exe"
+        
+        # default-Compiler
+        export CC=gcc
+
+        # ARM64-Compiler
+        if [ "${{ matrix.goarch }}" == "arm64" ]; then
+          export CC=aarch64-linux-gnu-gcc
         fi
-        GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/$output_name ./src
+        
+        CGO_ENABLED=1 GOOS=${{ matrix.goos }} GOARCH=${{ matrix.goarch }} go build -o dist/$output_name ./src
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4
